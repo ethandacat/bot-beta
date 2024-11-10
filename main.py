@@ -81,7 +81,7 @@ def post(browser, content, lastpost):
             By.CSS_SELECTOR,
             "textarea[aria-label='Type here. Use Markdown, BBCode, or HTML to format. Drag or paste images.']"
         )))
-    x = int(lastpost.read()) + 1
+    x = random.randint(1, 1000) if not lastpost.read(1) else int(lastpost.read()) + 1
     topic_content.send_keys(f"**[AUTOMATED]** \n{content}<font size={x}>")
     with open("lastpost.txt", "w") as lastpost:
         lastpost.write(str(x))
@@ -115,8 +115,7 @@ browser = webdriver.Chrome(options=options)
 browser.get('https://x-camp.discourse.group/')
 
 # Login
-WebDriverWait(browser,
-              10).until(ec.presence_of_element_located(
+WebDriverWait(browser, 10).until(ec.presence_of_element_located(
                   (By.ID, "username"))).send_keys(email)
 WebDriverWait(browser,
               10).until(ec.presence_of_element_located(
@@ -232,7 +231,10 @@ while True:
     print(command)
     if (command == ""):
         response = random.randint(0, 3)
-        x = int(lastpost.read()) + 1
+        if (not lastpost.read(1)):
+            x=random.randint(1,1000)
+        else:
+            x = int(lastpost.read()) + 1
         with open("lastpost.txt", "w") as lastpost:
             if not chatpm:
                 if response == 0:
@@ -269,7 +271,10 @@ while True:
         print(command)
         command = command.split()
         response = random.randint(0, 3)
-        x = int(lastpost.read()) + 1
+        if (not lastpost.read(1)):
+            x=random.randint(1,1000)
+        else:
+            x = int(lastpost.read()) + 1
         with open("lastpost.txt", "w") as lastpost:
             if command[0] == "say" and len(command) >= 2:
                 del command[0]
@@ -299,7 +304,7 @@ while True:
                     )  #-----------------------------------------------
             elif command[0] == "ai" and len(command) > 1:
                 if chatpm:
-                    context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, only when doing bullet points, you only need one asterisk in total for all the bullet points. "
+                    context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, you are currently in chat mode, meaning you can only do one-line responses. Your responses are limited to 6000 chars."
                 else:
                     context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. You can also use LaTeX if and only if needed. To use LaTeX, just put the command between two dollar signs. For example, $\texttt{hello}$. Also, when doing bullet points, you only need one asterisk in total for all the bullet points. "
                 del command[0]
