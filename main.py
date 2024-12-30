@@ -60,37 +60,31 @@ def pmcommand(thestring):
         return "-1"
 
 
-def post(browser, content, lastpost):
-    try:
-        reply = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CSS_SELECTOR,
-                 'button.btn.btn-icon-text.btn-primary.create')))
-        browser.execute_script("arguments[0].scrollIntoView();", reply)
-        reply.click()
-    except TimeoutException:
-        browser.refresh()
-        reply = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CSS_SELECTOR,
-                 'button.btn.btn-icon-text.btn-primary.create')))
-        reply.click()
+def defaultresponse(response, chatpm):
+    if response == 1:
+        if chatpm:
+            topic_content.send_keys(f"**[AUTOMATED]**\n Hi!\n")
+        else:
+            topic_content.send_keys(
+                f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+            )
 
-    topic_content = WebDriverWait(browser, 10).until(
-        ec.presence_of_element_located((
-            By.CSS_SELECTOR,
-            "textarea[aria-label='Type here. Use Markdown, BBCode, or HTML to format. Drag or paste images.']"
-        )))
-    x = random.randint(1, 1000) if not lastpost.read(1) else int(lastpost.read()) + 1
-    topic_content.send_keys(f"**[AUTOMATED]** \n{content}<font size={x}>")
-    with open("lastpost.txt", "w") as lastpost:
-        lastpost.write(str(x))
-    reply_button = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable((
-            By.CSS_SELECTOR,
-            "button.btn.btn-icon-text.btn-primary.create[title='Or press Ctrl+Enter']"
-        )))
-    reply_button.click()
+    elif response == 2:
+        if not chatpm:
+            topic_content.send_keys(
+                f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+            )
+        else:
+            topic_content.send_keys(
+                f"**[AUTOMATED]**\n How dare you ping me\n")
+    elif response == 3:
+        if not chatpm:
+            topic_content.send_keys(
+                f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+            )
+        else:
+            topic_content.send_keys(
+                f"**[AUTOMATED]**\n I want to take over the world!\n")
 
 
 options = webdriver.ChromeOptions()
@@ -98,7 +92,7 @@ options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--shm-size=1g")
 options.add_argument('--disable-gpu')
-#options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--disable-software-rasterizer')
 options.add_argument('--remote-debugging-port=9222')
 options.add_argument('--disable-blink-features=AutomationControlled')
@@ -115,7 +109,8 @@ browser = webdriver.Chrome(options=options)
 browser.get('https://x-camp.discourse.group/')
 
 # Login
-WebDriverWait(browser, 10).until(ec.presence_of_element_located(
+WebDriverWait(browser,
+              10).until(ec.presence_of_element_located(
                   (By.ID, "username"))).send_keys(email)
 WebDriverWait(browser,
               10).until(ec.presence_of_element_located(
@@ -126,7 +121,6 @@ signin.click()
 
 # Main loop
 while True:
-    lastpost = open("lastpost.txt", "r")
     profilebutton = WebDriverWait(browser, 10).until(
         ec.element_to_be_clickable((By.ID, 'toggle-current-user')))
     profilebutton.click()
@@ -166,7 +160,15 @@ while True:
             elementfound = True
             thelink = selectmention.get_attribute("href")
             selectmention.click()
-
+            # selectchat = WebDriverWait(browser, 2).until(
+            #     ec.element_to_be_clickable(
+            #         (By.CSS_SELECTOR,
+            #          "li.notification.unread.chat-mention a")))
+            # elementfound = True
+            # chatpm = True
+            # thelink = selectchat.get_attribute("href")
+            #print("thelink=", str(thelink))
+            # selectchat.click()
             break
 
         except stalerr:
@@ -227,155 +229,90 @@ while True:
         postcontent = WebDriverWait(chatmessage, 10).until(
             ec.presence_of_element_located(
                 (By.CLASS_NAME, "chat-message-text")))
+   
+    print(postcontent.text)
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
     print(command)
     if (command == ""):
         response = random.randint(0, 3)
-        if (not lastpost.read(1)):
-            x=random.randint(1,1000)
-        else:
-            x = int(lastpost.read()) + 1
-        with open("lastpost.txt", "w") as lastpost:
-            if not chatpm:
-                if response == 0:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n Hi!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-                elif response == 1:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-                elif response == 2:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-                elif response == 3:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-
-            else:
-                if response == 0:
-                    topic_content.send_keys(f"**[AUTOMATED]**\n Hi!\n")
-                elif response == 1:
-                    topic_content.send_keys(f"**[AUTOMATED]**\n Hello!\n")
-                elif response == 2:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n How dare you ping me\n")
-                elif response == 3:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n I want to take over the world!\n")
-            lastpost.write(str(x))
+        x = random.randint(1, 100000)
+        defaultresponse(response, chatpm)
     else:  #--------------------------------------------------------
-
         print(command)
         command = command.split()
         response = random.randint(0, 3)
-        if (not lastpost.read(1)):
-            x=random.randint(1,1000)
+
+        x = random.randint(1, 100000)
+        if command[0] == "say" and len(command) >= 2:
+            del command[0]
+            parrot = ' '.join(command)
+            if chatpm:
+                topic_content.send_keys(f"**[AUTOMATED]** \n\n {parrot}")
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(Keys.ENTER)
+            else:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n{parrot}<font size={x}>")
+
+        elif command[0] == "display" and command[1] == "help":
+            if chatpm:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:"
+                )
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(
+                    f"`@bot ai stuff here`: Outputs a Gemini 1.5-Flash response with the prompt of everything after the `ai`. \n\n `@bot say hello world`: \n parrots everything after the `say`.  \n\n`@bot xkcd`\n: Generates a random [xkcd](https://xkcd.com) comic. \n\nMore coming soon! \n\n For more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n"
+                )
+
+            else:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 1.5-Flash response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\nMore coming soon!\n\nFor more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n<font size={x}>"
+                )  #-----------------------------------------------
+        elif command[0] == "ai" and len(command) > 1:
+            if chatpm:
+                context = "You are a bot in a discourse forum created by @Ivan_Zong. Please do not use non-BMP characters in your response. Also, you are currently in chat mode, meaning you can only do one-line responses. Seperate your lines using \\n. Your responses are limited to 6000 chars."
+            else:
+                context = "You are a bot in a discourse forum created by @Ivan_Zong. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, when doing bullet points, you only need one asterisk, afterwards it is auto bullet point, so you only need to newline. To finish the bullet points, newline 2 times."
+            del command[0]
+            prompt = ' '.join(command)
+            fullprompt = f"{context}\n\nUser Prompt: {prompt}"
+            output = chat.send_message(fullprompt)
+            goodoutput = clean(output.text)
+            print(output.text)
+            if not chatpm:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n{goodoutput} \n\n<font size={x}>")
+            else:
+                topic_content.send_keys(f"**[AUTOMATED]** \n{goodoutput} \n")
+        elif command[0] == "xkcd":
+            rand = random.randint(1, 2996)
+            browser.execute_script("window.open('');")
+            browser.switch_to.window(browser.window_handles[1])
+            xkcdlink = 'https://xkcd.com/' + str(rand)
+            browser.get(xkcdlink)
+            thingy = WebDriverWait(browser, 10).until(
+                ec.presence_of_element_located(
+                    (By.CSS_SELECTOR, "img[style='image-orientation:none']")))
+            srce = thingy.get_attribute("src")
+            print(srce)
+            src2 = str(srce)
+            browser.close()
+            browser.switch_to.window(browser.window_handles[0])
+            if not chatpm:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>"
+                )
+            else:
+                topic_content.send_keys(
+                    f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n\n*source: {xkcdlink}*\n \n"
+                )
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(
+                    f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**"
+                )
         else:
-            x = int(lastpost.read()) + 1
-        with open("lastpost.txt", "w") as lastpost:
-            if command[0] == "say" and len(command) >= 2:
-                del command[0]
-                parrot = ' '.join(command)
-                if chatpm:
-                    topic_content.send_keys(f"**[AUTOMATED]** \n\n {parrot}")
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(Keys.ENTER)
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n{parrot}<font size={x}>")
-
-            elif command[0] == "display" and command[1] == "help":
-                if chatpm:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n\nI currently know how to do the following things:"
-                    )
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(
-                        f"`@bot ai stuff here`: Outputs a Gemini 1.5-Flash response with the prompt of everything after the `ai`. \n\n `@bot say hello world`: \n parrots everything after the `say`.  \n\n`@bot xkcd`\n: Generates a random [xkcd](https://xkcd.com) comic. \n\nMore coming soon! \n\n For more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n"
-                    )
-                    
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 1.5-Flash response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\nMore coming soon!\n\nFor more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n<font size={x}>"
-                    )  #-----------------------------------------------
-            elif command[0] == "ai" and len(command) > 1:
-                if chatpm:
-                    context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, you are currently in chat mode, meaning you can only do one-line responses. Your responses are limited to 6000 chars."
-                else:
-                    context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. You can also use LaTeX if and only if needed. To use LaTeX, just put the command between two dollar signs. For example, $\texttt{hello}$. Also, when doing bullet points, you only need one asterisk in total for all the bullet points. "
-                del command[0]
-                prompt = ' '.join(command)
-                fullprompt = f"{context}\n\nUser Prompt: {prompt}"
-                output = chat.send_message(fullprompt)
-                goodoutput = clean(output.text)
-                print(output.text)
-                if not chatpm:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n{goodoutput} \n\n<font size={x}>")
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n{goodoutput} \n")
-            elif command[0] == "xkcd":
-                rand = random.randint(1, 2996)
-                browser.execute_script("window.open('');")
-                browser.switch_to.window(browser.window_handles[1])
-                xkcdlink = 'https://xkcd.com/' + str(rand)
-                browser.get(xkcdlink)
-                thingy = WebDriverWait(browser, 10).until(
-                    ec.presence_of_element_located(
-                        (By.CSS_SELECTOR,
-                         "img[style='image-orientation:none']")))
-                srce = thingy.get_attribute("src")
-                print(srce)
-                src2 = str(srce)
-                browser.close()
-                browser.switch_to.window(browser.window_handles[0])
-                if not chatpm:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>"
-                    )
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n\n*source: {xkcdlink}*\n \n"
-                    )
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
-            elif response == 0:
-                if chatpm:
-                    topic_content.send_keys(f"**[AUTOMATED]**\n Hi! \n")
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n Hi!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-            elif response == 1:
-                if chatpm:
-                    topic_content.send_keys(f"**[AUTOMATED]**\n Hi!\n")
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-
-            elif response == 2:
-                if not chatpm:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n How dare you ping me\n")
-            elif response == 3:
-                if not chatpm:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
-                    )
-                else:
-                    topic_content.send_keys(
-                        f"**[AUTOMATED]**\n I want to take over the world!\n")
-            lastpost.write(str(x))
+            defaultresponse(response, chatpm)
     if not chatpm:
         reply_button = WebDriverWait(browser, 10).until(
             ec.element_to_be_clickable((
@@ -384,15 +321,19 @@ while True:
             )))
         reply_button.click()
     else:
-        topic_content.send_keys(Keys.ENTER)
-        time.sleep(0.02)
-        topic_content.send_keys(Keys.ENTER)
-        time.sleep(0.02)
-        topic_content.send_keys(Keys.ENTER)
-        time.sleep(0.02)
-        topic_content.send_keys(Keys.ENTER)
-        time.sleep(0.02)
+        reply_button = WebDriverWait(browser, 10).until(
+            ec.element_to_be_clickable(
+                (By.CLASS_NAME, "chat-composer-button.-send")))
+        reply_button.click()
+        # topic_content.send_keys(Keys.ENTER)
+        # time.sleep(0.02)
+        # topic_content.send_keys(Keys.ENTER)
+        # time.sleep(0.02)
+        # topic_content.send_keys(Keys.ENTER)
+        # time.sleep(0.02)
+        # topic_content.send_keys(Keys.ENTER)
+        # time.sleep(0.02)
 
-    time.sleep(2)
+    time.sleep(1)
     browser.refresh()
     browser.get('https://x-camp.discourse.group/')
