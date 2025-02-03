@@ -33,7 +33,7 @@ def clean(text):
 
 def getcommand(thestring):
     thestring = thestring.text
-    index = thestring.find('@bot')
+    index = thestring.lower().find('@bot')
     if index != -1:
         words = thestring[index + len('@bot'):].split()
         if len(words) > 1:
@@ -48,18 +48,19 @@ def getcommand(thestring):
 
 def pmcommand(thestring):
     thestring = thestring.text
-    index = thestring.find('@bot')
+    index = thestring.lower().find('@bot')
     if index != -1:
         words = thestring[index + len('@bot'):].split()
         if len(words) > 0:
             return thestring[index + len('@bot'):].strip()
-
         else:
             return ""
     else:
         return "-1"
 
-
+def getuser(thestring):
+    thestring=thestring.text
+    return thestring.split('\n')[1]
 def defaultresponse(response, chatpm):
     if response == 1:
         if chatpm:
@@ -190,7 +191,7 @@ while True:
             except stalerr:
                 browser.refresh()
             except TimeoutException:
-                print("Try again")
+                #print("Try again")
                 browser.refresh()
     if not chatpm:
         while 1:
@@ -219,26 +220,56 @@ while True:
             )))
     print(thelink)
     postnum = getpost(thelink)
+    backtrack=postnum
     if not chatpm:
         postcontent = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((By.ID, f"post_{postnum}")))
+        user=getuser(postcontent)
     else:
         chatmessage = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located(
                 (By.CSS_SELECTOR, f"div[data-id='{postnum}']")))
-        postcontent = WebDriverWait(chatmessage, 10).until(
-            ec.presence_of_element_located(
-                (By.CLASS_NAME, "chat-message-text")))
-   
-    print(postcontent.text)
+        postcontent = WebDriverWait(browser, 10).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
+        #print(chatmessage.get_attribute("class")) 
+        theclass=chatmessage.get_attribute("class")
+        classlist=theclass.split() if theclass else []
+        # print(backtrack)
+        # print(classlist) 
+        while classlist[-1]=="-user-info-hidden":
+            backtrack=backtrack-1 if backtrack is not None else None
+            # print(backtrack)
+            chatmessage = WebDriverWait(browser, 10).until(
+                ec.presence_of_element_located(
+                    (By.CSS_SELECTOR, f"div[data-id='{backtrack}']")))
+            theclass=chatmessage.get_attribute("class")
+            classlist=theclass.split() if theclass else []
+        # thingyelement = WebDriverWait(browser, 20).until(
+        #     ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"]'))
+        # )
+        usercardelement=WebDriverWait(browser, 20).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container'))
+        )
+        # usercardelement = WebDriverWait(browser, 10).until(
+        #     ec.presence_of_element_located(
+        #         (By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar')
+        #     )
+        # )
+        user=usercardelement.get_attribute("data-user-card")    
+            
+    
+    #print(postcontent.text)
+    #print(chatmessage.text)
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
+    print(user)
+    print(command)
     print(command)
     if (command == ""):
         response = random.randint(0, 3)
         x = random.randint(1, 100000)
         defaultresponse(response, chatpm)
     else:  #--------------------------------------------------------
-        print(command)
+        # print(command)
         command = command.split()
         response = random.randint(0, 3)
 
@@ -271,12 +302,12 @@ while True:
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
-                context = "You are a bot in a discourse forum created by @Ivan_Zong. Please do not use non-BMP characters in your response. Also, you are currently in chat mode, meaning you can only do one-line responses. Seperate your lines using \\n. Your responses are limited to 6000 chars."
+                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. Your responses are limited to 6000 chars."
             else:
-                context = "You are a bot in a discourse forum created by @Ivan_Zong. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, when doing bullet points, you only need one asterisk, afterwards it is auto bullet point, so you only need to newline. To finish the bullet points, newline 2 times."
+                context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, when doing bullet points, you only need one asterisk, afterwards it is auto bullet point, so you only need to newline. To finish the bullet points, newline 2 times."
             del command[0]
             prompt = ' '.join(command)
-            fullprompt = f"{context}\n\nUser Prompt: {prompt}"
+            fullprompt = f"{context}\n\nUser talking to you:{user}\n\nUser Prompt: {prompt}"
             output = chat.send_message(fullprompt)
             goodoutput = clean(output.text)
             print(output.text)
@@ -321,10 +352,16 @@ while True:
             )))
         reply_button.click()
     else:
-        reply_button = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CLASS_NAME, "chat-composer-button.-send")))
-        reply_button.click()
+        try:
+            reply_button = WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.CLASS_NAME, "chat-composer-button.-send")))
+            reply_button.click()
+        except TimeoutException:
+            time.sleep(0.5)
+            try:
+                reply_button = WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.CLASS_NAME, "chat-composer-button.-send")))
+                reply_button.click()
+            except TimeoutException:
+                topic_content.send_keys(Keys.ENTER)
         # topic_content.send_keys(Keys.ENTER)
         # time.sleep(0.02)
         # topic_content.send_keys(Keys.ENTER)
@@ -334,6 +371,6 @@ while True:
         # topic_content.send_keys(Keys.ENTER)
         # time.sleep(0.02)
 
-    time.sleep(1)
+    time.sleep(0.02)
     browser.refresh()
     browser.get('https://x-camp.discourse.group/')
