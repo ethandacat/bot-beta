@@ -16,7 +16,7 @@ from selenium.common.exceptions import ElementClickInterceptedException as ecie
 from selenium.webdriver.chrome.service import Service
 
 genai.configure(api_key=os.environ['GOOGLE_AI_API_KEY'])
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.0-flash-exp')
 chat = model.start_chat()
 
 
@@ -100,7 +100,7 @@ options.add_argument('--disable-software-rasterizer')
 options.add_argument('--remote-debugging-port=9222')
 options.add_argument('--disable-blink-features=AutomationControlled')
 options.add_argument('--disable-infobars')
-options.add_argument('--window-size=1920,1080')
+#options.add_argument('--window-size=1920,1080')
 options.add_argument('--disable-extensions')
 options.add_argument('--start-maximized')
 email = os.environ['EMAIL']
@@ -250,9 +250,8 @@ while True:
         #     ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"]'))
         # )
         try:
-           usercardelement=WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
-            user=usercardelement.get_attribute("data-user-card")
+           usercardelement=WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
+           user=usercardelement.get_attribute("data-user-card")
         except TimeoutException:
             try:
                 usercardelement=WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
@@ -306,7 +305,7 @@ while True:
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 1.5-Flash response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\nMore coming soon!\n\nFor more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\nMore coming soon!\n\nFor more information, refer to [this link](https://x-camp.discourse.group/t/introducing-bot/10552?u=ivan_zong).\n<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
