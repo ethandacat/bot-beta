@@ -2,6 +2,8 @@ import time
 import random
 import os
 import re
+import json
+import requests
 import google.generativeai as genai
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -317,27 +319,25 @@ while True:
             else:
                 topic_content.send_keys(f"**[AUTOMATED]** \n{goodoutput} \n")
         elif command[0] == "xkcd":
-            rand = random.randint(1, 2996)
-            browser.execute_script("window.open('');")
-            browser.switch_to.window(browser.window_handles[1])
+            lasturl = "https://xkcd.com/info.0.json"
+            lastresponse = requests.get(lasturl)
+            lastdata=lastresponse.json()
+            lastcomicid=lastdata["num"]
+            rand = random.randint(1, lastcomicid)
+            comic = 'https://xkcd.com/' + str(rand) + '/info.0.json'
+            response=requests.get(comic)
+            data=response.json()
+            comicurl=data["img"]
             xkcdlink = 'https://xkcd.com/' + str(rand)
-            browser.get(xkcdlink)
-            thingy = WebDriverWait(browser, 10).until(
-                ec.presence_of_element_located(
-                    (By.CSS_SELECTOR, "img[style='image-orientation:none']")))
-            srce = thingy.get_attribute("src")
-            print(srce)
-            src2 = str(srce)
-            browser.close()
-            browser.switch_to.window(browser.window_handles[0])
+            
+            #print(data)
+            #print(srce)
+            #src2 = str(srce)
+            #================================================================
             if not chatpm:
-                topic_content.send_keys(
-                    f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>"
-                )
+                topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
             else:
-                topic_content.send_keys(
-                    f"**[AUTOMATED]** \n[spoiler]![]({src2})[/spoiler]\n\n*source: {xkcdlink}*\n \n"
-                )
+                topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(
                     f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**"
