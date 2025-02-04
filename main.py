@@ -249,15 +249,21 @@ while True:
         # thingyelement = WebDriverWait(browser, 20).until(
         #     ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"]'))
         # )
-        usercardelement=WebDriverWait(browser, 20).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container'))
-        )
+        try:
+           usercardelement=WebDriverWait(browser, 10).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
+            user=usercardelement.get_attribute("data-user-card")
+        except TimeoutException:
+            try:
+                usercardelement=WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
+                user=usercardelement.get_attribute("data-user-card")
+            except TimeoutException:
+                user="ERROR FETCHING USER"
         # usercardelement = WebDriverWait(browser, 10).until(
         #     ec.presence_of_element_located(
         #         (By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar')
         #     )
-        # )
-        user=usercardelement.get_attribute("data-user-card")    
+        # ) 
             
     
     #print(postcontent.text)
@@ -304,7 +310,7 @@ while True:
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
-                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. Your responses are limited to 6000 chars."
+                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. Your responses are limited to 6000 chars."
             else:
                 context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Also, when doing bullet points, you only need one asterisk, afterwards it is auto bullet point, so you only need to newline. To finish the bullet points, newline 2 times."
             del command[0]
