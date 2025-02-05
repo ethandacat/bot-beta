@@ -318,9 +318,9 @@ while True:
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
-                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. When ending bullet points or numbers or any kind of list, newline 2 times. Your responses are limited to 6000 chars."
+                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. When ending bullet points or numbers or any kind of list, newline 3 times. Newline 3 times at the end of every list. Your responses are limited to 6000 chars."
             else:
-                context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. When ending bullet points or numbers or any kind of list, newline 2 times."
+                context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. When ending bullet points or numbers or any kind of list, newline 3 times. Please newline 3 times at the end of every list."
             del command[0]
             prompt = ' '.join(command)
             fullprompt = f"{context}\n\nUser talking to you:{user}\n\nUser Prompt: {prompt}"
