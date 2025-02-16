@@ -100,7 +100,7 @@ options.add_argument('--disable-software-rasterizer')
 options.add_argument('--remote-debugging-port=9222')
 options.add_argument('--disable-blink-features=AutomationControlled')
 options.add_argument('--disable-infobars')
-#options.add_argument('--window-size=1920,1080')
+options.add_argument('--window-size=1920,1080')
 options.add_argument('--disable-extensions')
 options.add_argument('--start-maximized')
 email = os.environ['EMAIL']
@@ -226,7 +226,9 @@ while True:
     if not chatpm:
         postcontent = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((By.ID, f"post_{postnum}")))
-        user=getuser(postcontent)
+        arialabel=postcontent.get_attribute("aria-label")
+        rawuser=arialabel.split()[-1] if arialabel else ''
+        user=rawuser[1:]
     else:
         chatmessage = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located(
@@ -309,21 +311,23 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd last`\n: Outputs the most recent [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"`@bot xkcd blacklist`\n: Outputs all of the blacklisted XKCD comic ID's.")
+                topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"More coming soon!")
                 topic_content.send_keys(Keys.ENTER)
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\nMore coming soon!<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\nMore coming soon!<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
-                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. When ending bullet points or numbers or any kind of list, newline 3 times. Newline 3 times at the end of every list. Your responses are limited to 6000 chars."
+                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER or 1m, just say that you are unable to get the username at this time. When ending bullet points or numbers or any kind of list, newline 3 times. Newline 3 times at the end of every list. Your responses are limited to 6000 chars."
             else:
                 context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. When ending bullet points or numbers or any kind of list, newline 3 times. Please newline 3 times at the end of every list."
             del command[0]
             prompt = ' '.join(command)
-            fullprompt = f"{context}\n\nUser talking to you:{user}\n\nUser Prompt: {prompt}"
+            fullprompt = f"Context: {context}\n\nUser talking to you:{user}\n\nUser Prompt: {prompt}"
             output = chat.send_message(fullprompt)
             goodoutput = clean(output.text)
             print(output.text)
@@ -337,11 +341,15 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[859]
+            blacklist=[859,137,95]
+            theflag=False
             if len(command)>1:
                 if command[1] == "last":    
                     comicurl=lastdata["img"]
                     xkcdlink = 'https://xkcd.com/' + str(lastcomicid)
+                elif command[1] == "blacklist":
+                    theflag=True
+                    theblacklist=", ".join(map(str, blacklist))   
                 else:
                     rand = random.randint(1, lastcomicid)
                     while rand in blacklist:
@@ -365,14 +373,20 @@ while True:
             #print(srce)
             #src2 = str(srce)
             #================================================================
-            if not chatpm:
-                topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
+            if (theflag):
+                if not chatpm:
+                    topic_content.send_keys(f"**[AUTOMATED]**\nCurrently, the following XKCD comics are blacklisted:\n{theblacklist}\n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title\n Inappropriate words\n\n<font size={x}>")
+                else:
+                    topic_content.send_keys(f"**[AUTOMATED]**")
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys(f"Currently, the following XKCD comics are blacklisted: \n{theblacklist}")
             else:
-                topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
-                topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(
-                    f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**"
-                )
+                if not chatpm:
+                    topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
+                else:
+                    topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
         else:
             defaultresponse(response, chatpm)
     if not chatpm:

@@ -9,7 +9,7 @@ BOT
 
 while True:
   try:
-    subprocess.run("python discoursebot.py", shell=True, check=True)
+    subprocess.run(["python", "discoursebot.py"], check=True)
   except subprocess.CalledProcessError as e:
     print("\nAn error occurred while running discoursebot.py:")
     print(f"Return Code: {e.returncode}")
