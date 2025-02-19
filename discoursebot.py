@@ -153,6 +153,7 @@ while True:
 
     elementfound = False
     chatpm = False
+    
     thelink = ""
     time.sleep(1)
     while not elementfound:
@@ -161,6 +162,7 @@ while True:
                 ec.element_to_be_clickable(
                     (By.CSS_SELECTOR, "li.notification.unread.mentioned a")))
             elementfound = True
+            #elementfound = False
             thelink = selectmention.get_attribute("href")
             selectmention.click()
             # selectchat = WebDriverWait(browser, 2).until(
@@ -341,7 +343,7 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[859,137,95]
+            blacklist=[859,137,95,812]
             theflag=False
             if len(command)>1:
                 if command[1] == "last":    

@@ -1,6 +1,6 @@
 import subprocess
 import traceback
-
+import time
 print("""
 
 BOT
@@ -19,3 +19,5 @@ while True:
   except Exception as e:
     print("\nAn unexpected error occurred:")
     print(traceback.format_exc())  
+  time.sleep(0.5)
+  
