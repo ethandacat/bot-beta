@@ -30,8 +30,10 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 * I want to take over the world!
 * How dare you ping me
 <br>
+
 **XKCD BLACKLIST:** There is a XKCD blacklist in place to block NSFW XKCD content. This blacklist is still growing, meaning you may still see a NSFW XKCD.
-<br>
+<br><br>
+
 **FAIL SAFE:** Thanks to [ethandacat](https://github.com/ethandacat) for this idea in the first place; This feature basically allows the code to run itself again if it runs into an error. 
 
 ## Anticipated Features:
