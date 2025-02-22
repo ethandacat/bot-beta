@@ -343,7 +343,8 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[859,137,95,812]
+            blacklist=[859,137,95,812,598,316,600,597,290]
+            blacklist.sort()
             theflag=False
             if len(command)>1:
                 if command[1] == "last":    
