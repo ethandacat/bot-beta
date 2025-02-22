@@ -162,18 +162,10 @@ while True:
                 ec.element_to_be_clickable(
                     (By.CSS_SELECTOR, "li.notification.unread.mentioned a")))
             elementfound = True
-            #elementfound = False
+            user=WebDriverWait(selectmention, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
+            #print(user)
             thelink = selectmention.get_attribute("href")
             selectmention.click()
-            # selectchat = WebDriverWait(browser, 2).until(
-            #     ec.element_to_be_clickable(
-            #         (By.CSS_SELECTOR,
-            #          "li.notification.unread.chat-mention a")))
-            # elementfound = True
-            # chatpm = True
-            # thelink = selectchat.get_attribute("href")
-            #print("thelink=", str(thelink))
-            # selectchat.click()
             break
 
         except stalerr:
@@ -185,12 +177,13 @@ while True:
                     ec.element_to_be_clickable(
                         (By.CSS_SELECTOR,
                          "li.notification.unread.chat-mention a")))
+                user=WebDriverWait(selectchat, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
+                #print(user)
                 elementfound = True
                 chatpm = True
                 thelink = selectchat.get_attribute("href")
                 #print("thelink=", str(thelink))
                 selectchat.click()
-
                 break
             except stalerr:
                 browser.refresh()
@@ -228,47 +221,12 @@ while True:
     if not chatpm:
         postcontent = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((By.ID, f"post_{postnum}")))
-        arialabel=postcontent.get_attribute("aria-label")
-        rawuser=arialabel.split()[-1] if arialabel else ''
-        user=rawuser[1:]
     else:
         chatmessage = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located(
                 (By.CSS_SELECTOR, f"div[data-id='{postnum}']")))
         postcontent = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
-        #print(chatmessage.get_attribute("class")) 
-        theclass=chatmessage.get_attribute("class")
-        classlist=theclass.split() if theclass else []
-        # print(backtrack)
-        # print(classlist) 
-        while classlist[-1]=="-user-info-hidden":
-            backtrack=backtrack-1 if backtrack is not None else None
-            # print(backtrack)
-            chatmessage = WebDriverWait(browser, 10).until(
-                ec.presence_of_element_located(
-                    (By.CSS_SELECTOR, f"div[data-id='{backtrack}']")))
-            theclass=chatmessage.get_attribute("class")
-            classlist=theclass.split() if theclass else []
-        # thingyelement = WebDriverWait(browser, 20).until(
-        #     ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"]'))
-        # )
-        try:
-           usercardelement=WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
-           user=usercardelement.get_attribute("data-user-card")
-        except TimeoutException:
-            try:
-                usercardelement=WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar a.chat-user-avatar__container')))
-                user=usercardelement.get_attribute("data-user-card")
-            except TimeoutException:
-                user="ERROR FETCHING USER"
-        # usercardelement = WebDriverWait(browser, 10).until(
-        #     ec.presence_of_element_located(
-        #         (By.CSS_SELECTOR, f'div[data-id="{backtrack}"] .chat-user-avatar')
-        #     )
-        # ) 
-            
-    
     #print(postcontent.text)
     #print(chatmessage.text)
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
