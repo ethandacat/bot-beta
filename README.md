@@ -36,7 +36,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 The following features may or may not come out in the future. Stay tuned!
 * A command which the bot will give you the exact comic if you give it an ID. (thanks [ethandacat](https://github.com/ethandacat) for this idea)
 * A command which the bot will give you the overview of a comic (all the information) given the ID.
-* A command whic the bot will give you all the information of an account on the forum given the username.
+* A command which the bot will give you all the information of an account on the forum given the username.
 * More documentation (here)
 
 ## Credits:
