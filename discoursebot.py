@@ -271,14 +271,18 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd last`\n: Outputs the most recent [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"`@bot xkcd latest`\n: Does the same thing as `@bot xkcd last`.")
+                topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd blacklist`\n: Outputs all of the blacklisted XKCD comic ID's.")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"More coming soon!")
                 topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"For more information, visit [the github page for bot](https://github.com/LiquidPixel101/Bot).")
+                topic_content.send_keys(Keys.ENTER)
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\nMore coming soon!<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd latest`\n> Does the same thing as `xkcd last`.\n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
@@ -305,12 +309,13 @@ while True:
             blacklist.sort()
             theflag=False
             if len(command)>1:
-                if command[1] == "last":    
+                if command[1] == "last" or command[1]=="latest":    
                     comicurl=lastdata["img"]
                     xkcdlink = 'https://xkcd.com/' + str(lastcomicid)
                 elif command[1] == "blacklist":
                     theflag=True
                     theblacklist=", ".join(map(str, blacklist))   
+                    theblacklist=theblacklist+"."
                 else:
                     rand = random.randint(1, lastcomicid)
                     while rand in blacklist:
