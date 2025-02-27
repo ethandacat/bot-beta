@@ -60,7 +60,8 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 ## Changelog:
 ```
 February 26, 2025
-Version 1.4.0: Added (unfinished) XKCD comic command, and reply functions for chat. Edits to the display help command, including also adding XKCD help to do the same thing as display help.
+Version 1.4.0: Added (unfinished) XKCD comic command, and reply functions for chat. 
+Edits to the display help command, including also adding XKCD help to do the same thing as display help.
 
 February 21, 2025
 Version 1.3.2: Fixed a typo
