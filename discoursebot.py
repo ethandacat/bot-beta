@@ -4,8 +4,10 @@ import os
 import re
 import json
 import requests
+import calendar
 import google.generativeai as genai
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -32,6 +34,20 @@ def clean(text):
     non_bmp_pattern = re.compile(r'[\U00010000-\U0010FFFF]', flags=re.UNICODE)
     return non_bmp_pattern.sub('', text)
 
+def isnumber(s):
+  try: 
+      float(s)
+  except ValueError:
+      return False
+  else:
+      return True
+def isinteger(s):
+  try: 
+      int(s)
+  except ValueError:
+      return False
+  else:
+      return True
 
 def getcommand(thestring):
     thestring = thestring.text
@@ -69,13 +85,13 @@ def defaultresponse(response, chatpm):
             topic_content.send_keys(f"**[AUTOMATED]**\n Hi!\n")
         else:
             topic_content.send_keys(
-                f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+                f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
             )
 
     elif response == 2:
         if not chatpm:
             topic_content.send_keys(
-                f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+                f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
             )
         else:
             topic_content.send_keys(
@@ -83,7 +99,7 @@ def defaultresponse(response, chatpm):
     elif response == 3:
         if not chatpm:
             topic_content.send_keys(
-                f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot display help` .[/details] \n<font size={x}>"
+                f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
             )
         else:
             topic_content.send_keys(
@@ -154,8 +170,6 @@ while True:
     elementfound = False
     chatpm = False
     
-    thelink = ""
-    time.sleep(1)
     while not elementfound:
         try:
             selectmention = WebDriverWait(browser, 3).until(
@@ -190,6 +204,8 @@ while True:
             except TimeoutException:
                 #print("Try again")
                 browser.refresh()
+    postnum = getpost(thelink)
+   
     if not chatpm:
         while 1:
             try:
@@ -197,7 +213,7 @@ while True:
                 reply = WebDriverWait(browser, 10).until(
                     ec.element_to_be_clickable(
                         (By.CSS_SELECTOR,
-                         'button.btn.btn-icon-text.btn-primary.create')))
+                         f'article#post_{postnum} button.post-action-menu__reply')))
                 browser.execute_script("arguments[0].scrollIntoView();", reply)
                 reply.click()
                 break
@@ -210,28 +226,35 @@ while True:
                 "textarea[aria-label='Type here. Use Markdown, BBCode, or HTML to format. Drag or paste images.']"
             )))
     else:
+        postcontent = WebDriverWait(browser, 10).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
+        try:
+            ActionChains(browser).move_to_element(postcontent).perform()
+            ActionChains(browser).move_to_element(postcontent).perform()
+            reply = WebDriverWait(browser, 10).until( ec.element_to_be_clickable((By.CSS_SELECTOR,f'div[data-id="{postnum}"] button.reply-btn')))
+            reply.click()
+        except TimeoutError:
+            print("Reply button did not work.")
         topic_content = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((
                 By.CSS_SELECTOR,
-                "textarea[class='ember-text-area ember-view chat-composer__input']"
-            )))
+                "textarea[class='ember-text-area ember-view chat-composer__input']")))
     print(thelink)
-    postnum = getpost(thelink)
+    
     backtrack=postnum
     if not chatpm:
         postcontent = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((By.ID, f"post_{postnum}")))
     else:
+        postcontent = WebDriverWait(browser, 10).until(
+            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
         chatmessage = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located(
                 (By.CSS_SELECTOR, f"div[data-id='{postnum}']")))
-        postcontent = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
     #print(postcontent.text)
     #print(chatmessage.text)
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
-    print(user)
-    print(command)
+    
     print(command)
     if (command == ""):
         response = random.randint(0, 3)
@@ -255,17 +278,17 @@ while True:
                 topic_content.send_keys(
                     f"**[AUTOMATED]** \n{parrot}<font size={x}>")
 
-        elif len(command)>1 and command[0] == "display" and command[1] == "help":
+        elif (len(command)>1 and command[0] == "display" and command[1] == "help") or (command[0]=="help"):
             if chatpm:
                 topic_content.send_keys(
                     f"**[AUTOMATED]** \n\nI currently know how to do the following things:"
                 )
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(
-                    f"`@bot ai stuff here`: Outputs a Gemini 2.0-Flash Experimental response with the prompt of everything after the `ai`."
+                    f"`@bot ai [PROMPT]`: Outputs a Gemini 2.0-Flash Experimental response with the prompt of everything after the `ai`."
                 )
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot say hello world`: Parrots everything after the `say`.")
+                topic_content.send_keys(f"`@bot say [PARROTED TEXT]`: Parrots everything after the `say`.")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd`\n: Generates a random [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
@@ -273,16 +296,19 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd latest`\n: Does the same thing as `@bot xkcd last`.")
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot xkcd blacklist`\n: Outputs all of the blacklisted XKCD comic ID's.")
+                topic_content.send_keys(f"`@bot xkcd blacklist`: Outputs all of the blacklisted XKCD comic ID's.")
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"More coming soon!")
+                topic_content.send_keys(f"`@bot xkcd comic [ID HERE]`: Gives you the xkcd comic with the ID along with some info on the comic.")
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"More coming soon! ")
+                topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"For more information, visit [the github page for bot](https://github.com/LiquidPixel101/Bot).")
                 topic_content.send_keys(Keys.ENTER)
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai stuff here`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say hello world`\n > hello world\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd latest`\n> Does the same thing as `xkcd last`.\n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd latest`\n> Does the same thing as `xkcd last`.\n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n `@bot xkcd comic [ID HERE]` \n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
@@ -305,17 +331,61 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[859,137,95,812,598,316,600,597,290]
+            blacklist=[859,137,95,812,598,316,600,597,290,1357]
             blacklist.sort()
-            theflag=False
+            isblacklist=False
+            iscomic=False
+            dontoutput=False
             if len(command)>1:
                 if command[1] == "last" or command[1]=="latest":    
                     comicurl=lastdata["img"]
                     xkcdlink = 'https://xkcd.com/' + str(lastcomicid)
                 elif command[1] == "blacklist":
-                    theflag=True
+                    isblacklist=True
                     theblacklist=", ".join(map(str, blacklist))   
                     theblacklist=theblacklist+"."
+                elif command[1]=="comic":
+                    if len(command)==2:
+                        dontoutput=True
+                        if chatpm:
+                            topic_content.send_keys(f"**[AUTOMATED]**")
+                            topic_content.send_keys(Keys.ENTER)
+                            topic_content.send_keys("It seems like you forgot to type in your ID for the xkcd. For more information, say `@bot help` or `@bot display help`.")
+                        else:
+                            topic_content.send_keys("**[AUTOMATED]**\nIt seems like you forgot to type in your ID for the xkcd.\n For more information, say `@bot help` or `@bot display help`.\n<font size={x}>")
+                    elif len(command)>=3:
+                        if (isnumber(command[2])):
+                            if float(command[2])>0 and float(command[2])<=lastcomicid and isinteger(command[2]):
+                                if (int(command[2]) in blacklist):
+                                    dontoutput=True
+                                    if chatpm:
+                                        topic_content.send_keys(f"**[AUTOMATED]**")
+                                        topic_content.send_keys(Keys.ENTER)
+                                        topic_content.send_keys("This xkcd comic is in the blacklist. Sorry!")
+                                    else:
+                                        topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\n Inappropriate words.\n\n <font size={x}>")
+                                else:
+                                    comic = 'https://xkcd.com/' + command[2] + '/info.0.json'
+                                    response=requests.get(comic)
+                                    data=response.json()
+                                    xkcdlink='https://xkcd.com/' + command[2]
+                                    iscomic=1
+                            else:
+                                dontoutput=True
+                                if chatpm:
+                                    topic_content.send_keys(f"**[AUTOMATED]**")
+                                    topic_content.send_keys(Keys.ENTER)
+                                    topic_content.send_keys(f"{command[2]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
+                                else:
+                                    topic_content.send_keys(f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
+                        else:
+                            dontoutput=True
+                            if chatpm:
+                                topic_content.send_keys(f"**[AUTOMATED]**")
+                                topic_content.send_keys(Keys.ENTER)
+                                topic_content.send_keys(f"{command[2]} is not a valid XKCD comic ID. This is because the ID is not a number.")
+                            else:
+                                topic_content.send_keys(f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because the ID is not a number.")
                 else:
                     rand = random.randint(1, lastcomicid)
                     while rand in blacklist:
@@ -339,20 +409,40 @@ while True:
             #print(srce)
             #src2 = str(srce)
             #================================================================
-            if (theflag):
-                if not chatpm:
-                    topic_content.send_keys(f"**[AUTOMATED]**\nCurrently, the following XKCD comics are blacklisted:\n{theblacklist}\n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title\n Inappropriate words\n\n<font size={x}>")
+            if not dontoutput:
+                if (isblacklist):
+                    if not chatpm:
+                        topic_content.send_keys(f"**[AUTOMATED]**\nCurrently, the following XKCD comics are blacklisted:\n{theblacklist}\n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title\n Inappropriate words\n\n<font size={x}>")
+                    else:
+                        topic_content.send_keys(f"**[AUTOMATED]**")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"Currently, the following XKCD comics are blacklisted: \n{theblacklist}")
+                elif (iscomic):
+                    if chatpm:
+                        topic_content.send_keys(f"**[AUTOMATED]**")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"**{data['safe_title']}** - XKCD {data['num']}")
+                        topic_content.send_keys(Keys.ENTER)
+                        time.sleep(0.1)
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"[spoiler]![]({data['img']})[/spoiler]")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"*Link: {xkcdlink}*")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
+                        
+                        
+                    else:
+                        topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\nPublished {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n<font size={x}>")
                 else:
-                    topic_content.send_keys(f"**[AUTOMATED]**")
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(f"Currently, the following XKCD comics are blacklisted: \n{theblacklist}")
-            else:
-                if not chatpm:
-                    topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
-                else:
-                    topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
-                    topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
+                    if not chatpm:
+                        topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
+                    else:
+                        topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
         else:
             defaultresponse(response, chatpm)
     if not chatpm:
@@ -373,15 +463,7 @@ while True:
                 reply_button.click()
             except TimeoutException:
                 topic_content.send_keys(Keys.ENTER)
-        # topic_content.send_keys(Keys.ENTER)
-        # time.sleep(0.02)
-        # topic_content.send_keys(Keys.ENTER)
-        # time.sleep(0.02)
-        # topic_content.send_keys(Keys.ENTER)
-        # time.sleep(0.02)
-        # topic_content.send_keys(Keys.ENTER)
-        # time.sleep(0.02)
 
-    time.sleep(0.02)
+    time.sleep(0.002)
     browser.refresh()
     browser.get('https://x-camp.discourse.group/')
