@@ -59,6 +59,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 1, 2025
+Version 1.4.2: Blacklisted XKCD comic
+
 February 27, 2025
 Version 1.4.1: Added error prevention for replying in chat. It means the bot will not crash at the cost of the replying function in chat sometimes not working.
 
