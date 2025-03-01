@@ -39,7 +39,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 **FAIL SAFE:** Thanks to [ethandacat](https://github.com/ethandacat) for this idea in the first place; This feature basically allows the code to run itself again if it runs into an error. 
 <br><br>
 
-**REPLYING:** The bot "replies" to your post. If the bot replies to no user, then it is replying to the message directly above it. Otherwise, there will be a "reply" dialog on the top of the message that shows who the bot is replying to. It works in both chat and topics!
+**REPLYING:** The bot "replies" to your post. If the bot replies to no user, then it is replying to the message directly above it. Otherwise, there will be a "reply" dialog on the top of the message that shows who the bot is replying to. It works in both chat and topics! Note: the chat reply function may not work sometimes. This would not affect or crash the bot, though.
 
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
@@ -59,7 +59,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
-February 26, 2025
+February 27, 2025
+Version 1.4.1: Added error prevention for replying in chat. It means the bot will not crash at the cost of the replying function in chat sometimes not working.
+
 Version 1.4.0: Added (unfinished) XKCD comic command, and reply functions for chat. 
 Edits to the display help command, including also adding XKCD help to do the same thing as display help.
 

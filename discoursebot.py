@@ -233,7 +233,7 @@ while True:
             ActionChains(browser).move_to_element(postcontent).perform()
             reply = WebDriverWait(browser, 10).until( ec.element_to_be_clickable((By.CSS_SELECTOR,f'div[data-id="{postnum}"] button.reply-btn')))
             reply.click()
-        except TimeoutError:
+        except Exception:
             print("Reply button did not work.")
         topic_content = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((
