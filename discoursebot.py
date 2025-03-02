@@ -190,6 +190,8 @@ while True:
         except stalerr:
             print("StaleElementReferenceException encountered. Retrying...")
             browser.refresh()
+            elementfound = False
+            continue;
         except TimeoutException:
             try:
                 selectchat = WebDriverWait(browser, 2).until(
