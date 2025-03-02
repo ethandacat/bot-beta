@@ -224,7 +224,7 @@ while True:
                 browser.execute_script("arguments[0].scrollIntoView();", reply)
                 reply.click()
                 break
-            except TimeoutException:
+            except Exception:
                 browser.refresh()
 
         topic_content = WebDriverWait(browser, 10).until(
@@ -342,7 +342,7 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[859,137,95,812,598,316,600,597,290,1357,624]
+            blacklist=[859,137,95,812,598,316,600,597,290,1357,624,906]
             blacklist.sort()
             isblacklist=False
             iscomic=False
