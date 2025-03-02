@@ -33,7 +33,12 @@ def getpost(link):
 def clean(text):
     non_bmp_pattern = re.compile(r'[\U00010000-\U0010FFFF]', flags=re.UNICODE)
     return non_bmp_pattern.sub('', text)
-
+    
+def checkbmp(s):
+    if any(ord(char) > 0xFFFF for char in s):
+        return "Sorry for the inconvenience, but the `say` command does not support non-BMP characters."
+    return s
+    
 def isnumber(s):
   try: 
       float(s)
@@ -269,6 +274,7 @@ while True:
         if command[0] == "say" and len(command) >= 2:
             del command[0]
             parrot = ' '.join(command)
+            parrot=checkbmp(parrot)
             if chatpm:
                 topic_content.send_keys(f"**[AUTOMATED]** \n\n {parrot}")
                 topic_content.send_keys(Keys.ENTER)

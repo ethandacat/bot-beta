@@ -60,6 +60,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 ## Changelog:
 ```
 March 1, 2025
+Version 1.4.4: Patched non-BMP error notifying the users that non-BMP characters are not supported.
+
+March 1, 2025
 Version 1.4.3: Added better newline functionality for AI in chats. Before it was failing to create a new line.
 
 March 1, 2025
