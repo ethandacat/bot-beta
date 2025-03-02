@@ -36,7 +36,7 @@ def clean(text):
     
 def checkbmp(s):
     if any(ord(char) > 0xFFFF for char in s):
-        return "Sorry for the inconvenience, but the `say` command does not support non-BMP characters."
+        return "Sorry for the inconvenience, but the `say` command only supports BMP characters."
     return s
     
 def isnumber(s):
