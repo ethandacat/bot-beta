@@ -60,6 +60,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 ## Changelog:
 ```
 March 1, 2025
+Version 1.4.3: Added better newline functionality for AI in chats. Before it was failing to create a new line.
+
+March 1, 2025
 Version 1.4.2: Blacklisted XKCD comic
 
 February 27, 2025
