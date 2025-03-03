@@ -59,6 +59,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 2, 2025
+Version 1.4.5: Fixed 404 error for XKCD and a BUNCH of blacklisted XKCDs.
+
 March 1, 2025
 Version 1.4.4: Patched non-BMP error notifying the users that non-BMP characters are not supported.
 
