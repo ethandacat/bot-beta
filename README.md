@@ -43,6 +43,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
+* Changelog and version control command
 * A command which the bot will give you all the information of an account on the forum given the username.
 * More documentation (here)
 
