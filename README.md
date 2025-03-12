@@ -60,6 +60,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 11, 2025
+Version 1.4.6: Minor edits
+
 March 2, 2025
 Version 1.4.5: Fixed 404 error for XKCD and a BUNCH of blacklisted XKCDs.
 
