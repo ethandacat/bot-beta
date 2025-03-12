@@ -38,7 +38,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 **FAIL SAFE:** Thanks to [ethandacat](https://github.com/ethandacat) for this idea in the first place; This feature basically allows the code to run itself again if it runs into an error. 
 <br><br>
-
+**DELETING ERROR PREVENTION**
 **REPLYING:** The bot "replies" to your post. If the bot replies to no user, then it is replying to the message directly above it. Otherwise, there will be a "reply" dialog on the top of the message that shows who the bot is replying to. It works in both chat and topics! Note: the chat reply function may not work sometimes. This would not affect or crash the bot, though.
 
 ## Anticipated Features:
@@ -60,6 +60,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 11, 2025
+Version 1.4.7: Added feature where if it gets pinged but cannot get the message it replies something
+
 March 11, 2025
 Version 1.4.6: Minor edits
 

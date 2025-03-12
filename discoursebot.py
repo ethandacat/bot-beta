@@ -263,9 +263,19 @@ while True:
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
     
     print(command)
+    x = random.randint(1, 1000000)
+    if (command=="-1"):
+        if chatpm:
+            topic_content.send_keys(f"**[AUTOMATED]**")
+            topic_content.send_keys(Keys.ENTER)
+            topic_content.send_keys(f"I did not get your message. This could be because you deleted your post before I could read it.")
+            topic_content.send_keys(Keys.ENTER)
+        else:
+            topic_content.send_keys(
+                f"**[AUTOMATED]** \n\nI did not get your message. This could be because you deleted your post before I could read it.\n\n<font size={x}>")
     if (command == ""):
         response = random.randint(0, 3)
-        x = random.randint(1, 100000)
+        x = random.randint(1, 1000000)
         defaultresponse(response, chatpm)
     else:  #--------------------------------------------------------
         # print(command)
