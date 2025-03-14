@@ -38,7 +38,10 @@ def checkbmp(s):
     if any(ord(char) > 0xFFFF for char in s):
         return "Sorry for the inconvenience, but the `say` command only supports BMP characters."
     return s
-    
+
+def dellast(text):
+    lines = text.split("\n")  
+    return "\n".join(lines[:-2]) if len(lines) > 1 else "" 
 def isnumber(s):
   try: 
       float(s)
@@ -310,9 +313,7 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd`\n: Generates a random [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot xkcd last`\n: Outputs the most recent [xkcd](https://xkcd.com) comic.")
-                topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot xkcd latest`\n: Does the same thing as `@bot xkcd last`.")
+                topic_content.send_keys(f"`@bot xkcd last` or `@bot xkcd latest`\n: Outputs the most recent [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd blacklist`: Outputs all of the blacklisted XKCD comic ID's.")
                 topic_content.send_keys(Keys.ENTER)
@@ -326,7 +327,7 @@ while True:
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd latest`\n> Does the same thing as `xkcd last`.\n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n `@bot xkcd comic [ID HERE]` \n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
@@ -365,6 +366,30 @@ while True:
                     isblacklist=True
                     theblacklist=", ".join(map(str, blacklist))   
                     theblacklist=theblacklist+"."
+                elif (isnumber(command[1])):
+                    if float(command[1])>0 and float(command[1])<=lastcomicid and isinteger(command[1]) and float(command[1])!=404:
+                        if (int(command[1]) in blacklist):
+                            dontoutput=True
+                            if chatpm:
+                                topic_content.send_keys(f"**[AUTOMATED]**")
+                                topic_content.send_keys(Keys.ENTER)
+                                topic_content.send_keys("This xkcd comic is in the blacklist. Sorry!")
+                            else:
+                                topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\nNonexistent comic. \nInappropriate words.\n\n <font size={x}>")
+                        else:
+                            comic = 'https://xkcd.com/' + command[1] + '/info.0.json'
+                            response=requests.get(comic)
+                            data=response.json()
+                            xkcdlink='https://xkcd.com/' + command[1]
+                            iscomic=1
+                    else:
+                        dontoutput=True
+                        if chatpm:
+                            topic_content.send_keys(f"**[AUTOMATED]**")
+                            topic_content.send_keys(Keys.ENTER)
+                            topic_content.send_keys(f"{command[1]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
+                        else:
+                            topic_content.send_keys(f"**[AUTOMATED]**\n{command[1]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
                 elif command[1]=="comic":
                     if len(command)==2:
                         dontoutput=True
@@ -445,20 +470,46 @@ while True:
                         topic_content.send_keys(f"**[AUTOMATED]**")
                         topic_content.send_keys(Keys.ENTER)
                         topic_content.send_keys(f"**{data['safe_title']}** - XKCD {data['num']}")
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         time.sleep(0.1)
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         topic_content.send_keys(f"Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}")
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        time.sleep(0.1)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         topic_content.send_keys(f"[spoiler]![]({data['img']})[/spoiler]")
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         topic_content.send_keys(f"*Link: {xkcdlink}*")
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        time.sleep(0.1)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        time.sleep(0.1)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        topic_content.send_keys(f"Description: {data['alt']}")
                         
-                        
+                        if data['transcript']!="":
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                            time.sleep(0.1)
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                            topic_content.send_keys(f"[u]**Transcript:**[/u]")
+                            topic_content.send_keys(Keys.ENTER)
+                            time.sleep(0.1)
+                            topic_content.send_keys(Keys.ENTER)
+                            data['transcript']=dellast(data['transcript'])
+                            topic_content.send_keys(f"```txt")
+                            topic_content.send_keys(Keys.ENTER)  
+                            topic_content.send_keys(f"{data['transcript']}")
+                            topic_content.send_keys(Keys.ENTER)  
+                            topic_content.send_keys(f"```")
+                            topic_content.send_keys(Keys.ENTER)
                     else:
-                        topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\nPublished {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n<font size={x}>")
+                        if (data['transcript']==""):   
+                            topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n<font size={x}>")
+                        else:
+                            data['transcript']=dellast(data['transcript'])
+                            topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n---\n\n[details=Transcript]\n```txt\n{data['transcript']}\n```\n[/details]\n\n<font size={x}>")
                 else:
                     if not chatpm:
                         topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")

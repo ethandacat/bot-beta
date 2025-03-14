@@ -24,7 +24,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 <br><br>
 `@bot xkcd blacklist`: Outputs the current list of blacklisted XKCD comics. If it's in a topic, it will additionally output the reasons a XKCD may be blacklisted.
 <br><br>
-`@bot xkcd comic [ID HERE]`: This will give you the xkcd comic with the ID given along with some info on the comic.
+`@bot xkcd [ID HERE]` or `@bot xkcd comic [ID HERE]`: This will give you the xkcd comic with the ID given along with some info on the comic.
 ### Other
 **NO COMMAND:** If no recognizable command is detected, then the bot will output one of the following at random:
 * Hi!
@@ -60,6 +60,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 13, 2025
+Version 1.5.0: Edited XKCD command so that you dont need to use the keyword "comic" to make it reply the specific comic. Also, for the specific comics, added description and transcript. 
+
 March 11, 2025
 Version 1.4.7: Added feature where if it gets pinged but cannot get the message it replies something
 
