@@ -45,6 +45,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 The following features may or may not come out in the future. Stay tuned!
 * Changelog and version control command
 * A command which the bot will give you all the information of an account on the forum given the username.
+* The "run" command where you would enter a code and it would give the result. 2 languages: Python and C++. (Credit to [ethandacat](https://github.com/ethandacat) for requesting this feature. This feature is also a tribute to the end of service for catscobot.)
 * More documentation (here)
 
 ## Credits:

@@ -305,15 +305,16 @@ while True:
                     f"**[AUTOMATED]** \n\nI currently know how to do the following things:"
                 )
                 topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(
                     f"`@bot ai [PROMPT]`: Outputs a Gemini 2.0-Flash Experimental response with the prompt of everything after the `ai`."
                 )
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot say [PARROTED TEXT]`: Parrots everything after the `say`.")
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot xkcd`\n: Generates a random [xkcd](https://xkcd.com) comic.")
+                topic_content.send_keys(f"`@bot xkcd`: Generates a random [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"`@bot xkcd last` or `@bot xkcd latest`\n: Outputs the most recent [xkcd](https://xkcd.com) comic.")
+                topic_content.send_keys(f"`@bot xkcd last` or `@bot xkcd latest`: Outputs the most recent [xkcd](https://xkcd.com) comic.")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd blacklist`: Outputs all of the blacklisted XKCD comic ID's.")
                 topic_content.send_keys(Keys.ENTER)
@@ -347,7 +348,7 @@ while True:
                 finaloutput=f"**[AUTOMATED]** ␤{goodoutput} \n"
                 for part in finaloutput.split("␤"):
                     topic_content.send_keys(part)
-                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
@@ -463,7 +464,7 @@ while True:
                         topic_content.send_keys(f"**[AUTOMATED]**")
                         topic_content.send_keys(Keys.ENTER)
                         topic_content.send_keys(f"Currently, the following {len(blacklist)} XKCD comics are blacklisted:")
-                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER)
                         topic_content.send_keys(theblacklist)
                 elif (iscomic):
                     if chatpm:
@@ -484,19 +485,19 @@ while True:
                         time.sleep(0.1)
                         topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                         topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
-                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        topic_content.send_keys(Keys.ENTER) 
                         time.sleep(0.1)
-                        topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                        topic_content.send_keys(Keys.ENTER) 
                         topic_content.send_keys(f"Description: {data['alt']}")
                         
                         if data['transcript']!="":
-                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                            topic_content.send_keys(Keys.ENTER) 
                             time.sleep(0.1)
-                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                            topic_content.send_keys(Keys.ENTER) 
                             topic_content.send_keys(f"[u]**Transcript:**[/u]")
-                            topic_content.send_keys(Keys.ENTER)
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER)
                             time.sleep(0.1)
-                            topic_content.send_keys(Keys.ENTER)
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER)
                             data['transcript']=dellast(data['transcript'])
                             topic_content.send_keys(f"```txt")
                             topic_content.send_keys(Keys.ENTER)  
