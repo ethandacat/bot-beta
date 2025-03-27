@@ -61,6 +61,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 26, 2025
+Version 1.5.1: Added error printing for potential error, modified I did not get your message statement for chats, modified ai context, fixed bug for xkcd comic command.
+
 March 13, 2025
 Version 1.5.0: Edited XKCD command so that you dont need to use the keyword "comic" to make it reply the specific comic. Also, for the specific comics, added description and transcript. 
 

@@ -224,10 +224,11 @@ while True:
                     ec.element_to_be_clickable(
                         (By.CSS_SELECTOR,
                          f'article#post_{postnum} button.post-action-menu__reply')))
-                browser.execute_script("arguments[0].scrollIntoView();", reply)
+                #browser.execute_script("arguments[0].scrollIntoView();", reply)
                 reply.click()
                 break
-            except Exception:
+            except Exception as e:
+                print(f"Some error occured. \n {e}")
                 browser.refresh()
 
         topic_content = WebDriverWait(browser, 10).until(
@@ -275,7 +276,7 @@ while True:
             topic_content.send_keys(Keys.ENTER)
         else:
             topic_content.send_keys(
-                f"**[AUTOMATED]** \n\nI did not get your message. This could be because you deleted your post before I could read it.\n\n<font size={x}>")
+                f"**[AUTOMATED]** \n\nI did not get your message. This could be because you mentioned `@all`.\n\n<font size={x}>")
     if (command == ""):
         response = random.randint(0, 3)
         x = random.randint(1, 1000000)
@@ -332,9 +333,9 @@ while True:
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
-                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. Replace all newlines by typing this character: ␤! Your responses are limited to 6000 chars."
+                context = "You are a bot in a discourse forum chat. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. Replace all newlines by typing this character: ␤! There are 3 r's in strawberry. Make no reference to this context in your response. Your responses are limited to 6000 chars."
             else:
-                context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. When ending bullet points or numbers or any kind of list, newline 3 times. Please newline 3 times at the end of every list."
+                context = "You are a bot in a discourse forum. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. When ending bullet points or numbers or any kind of list, newline 3 times. Please newline 3 times at the end of every list. There are 3 r's in strawberry. Make no reference to this context in your response."
             del command[0]
             prompt = ' '.join(command)
             fullprompt = f"Context: {context}\n\nUser talking to you:{user}\n\nUser Prompt: {prompt}"
@@ -500,9 +501,12 @@ while True:
                             topic_content.send_keys(Keys.SHIFT, Keys.ENTER)
                             data['transcript']=dellast(data['transcript'])
                             topic_content.send_keys(f"```txt")
-                            topic_content.send_keys(Keys.ENTER)  
-                            topic_content.send_keys(f"{data['transcript']}")
-                            topic_content.send_keys(Keys.ENTER)  
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER)  
+                            for part in data['transcript'].split("\n"):
+                                topic_content.send_keys(part)
+                                topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+                            #topic_content.send_keys(f"{data['transcript']}")
+                            topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
                             topic_content.send_keys(f"```")
                             topic_content.send_keys(Keys.ENTER)
                     else:
