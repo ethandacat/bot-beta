@@ -369,7 +369,7 @@ while True:
                     comicurl=lastdata["img"]
                     xkcdlink = 'https://xkcd.com/' + str(lastcomicid)
                 elif command[1] == "blacklist":
-                    authpeeps=["Ivan_Zong","IvanZong"]
+                    authpeeps=["Ivan_Zong","IvanZong","e","WinstonNing"]
                     if len(command)>3 and command[2]=="comic":
                         dontoutput=True
                         if user in authpeeps:
