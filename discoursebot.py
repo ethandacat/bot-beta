@@ -5,6 +5,7 @@ import re
 import json
 import requests
 import calendar
+from replit import db
 import google.generativeai as genai
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -319,6 +320,8 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd blacklist`: Outputs all of the blacklisted XKCD comic ID's.")
                 topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"`@bot xkcd blacklist comic [ID HERE]`: Blacklists the comic with the ID. Only authorized users can execute this command.")
+                topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"`@bot xkcd comic [ID HERE]`: Gives you the xkcd comic with the ID along with some info on the comic.")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(f"More coming soon! ")
@@ -329,7 +332,7 @@ while True:
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
@@ -355,8 +358,9 @@ while True:
             lastresponse = requests.get(lasturl)
             lastdata=lastresponse.json()
             lastcomicid=lastdata["num"]
-            blacklist=[37, 38, 45, 65, 66, 68, 70, 72, 90, 95, 102, 114, 137, 168, 174, 179, 186, 194, 196, 202, 276, 279, 290, 291, 295, 300, 308, 310, 316, 322, 328, 341, 364, 388, 398, 400, 403, 425, 429, 432, 435, 437, 438, 449, 452, 462, 472, 475, 476, 487, 521, 526, 540, 546, 549, 554, 563, 566, 584, 591, 592, 595, 596, 597, 598, 600, 603, 624, 628, 631, 636, 637, 677, 692, 693, 697, 698, 705, 708, 714, 715, 744, 746, 751, 753, 796, 798, 810, 812, 813, 821, 828, 830, 849, 853, 859, 874, 875, 885, 887, 888, 906, 907, 927, 931, 940, 958, 984, 985, 992, 1012, 1025, 1027, 1032, 1037, 1046, 1049, 1076, 1101, 1137, 1150, 1176, 1182, 1238, 1252, 1253, 1256, 1274, 1289, 1290, 1291, 1305, 1314, 1331, 1339, 1357, 1383, 1431, 1458, 1462, 1491, 1504, 1564, 1617, 1634, 1646, 1647,404,1848]
-            blacklist.sort()
+            blacklist = list(db.get("blacklist", []))  
+            blacklist.sort() 
+            db["blacklist"] = blacklist 
             isblacklist=False
             iscomic=False
             dontoutput=False
@@ -365,9 +369,47 @@ while True:
                     comicurl=lastdata["img"]
                     xkcdlink = 'https://xkcd.com/' + str(lastcomicid)
                 elif command[1] == "blacklist":
-                    isblacklist=True
-                    theblacklist=", ".join(map(str, blacklist))   
-                    theblacklist=theblacklist+"."
+                    authpeeps=["Ivan_Zong","IvanZong"]
+                    if len(command)>3 and command[2]=="comic":
+                        dontoutput=True
+                        if user in authpeeps:
+                            if float(command[3])>0 and float(command[3])<=lastcomicid and isinteger(command[3]):
+                                if (int(command[3]) in blacklist):
+                                    if chatpm:
+                                        topic_content.send_keys(f"**[AUTOMATED]**")
+                                        topic_content.send_keys(Keys.ENTER)
+                                        topic_content.send_keys("This xkcd comic is already in the blacklist.")
+                                    else:
+                                        topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is already in the blacklist. <font size={x}>")
+                                else:
+                                    blacklist.append(int(command[3]))
+                                    db["blacklist"]=blacklist
+                                    if chatpm:
+                                        topic_content.send_keys(f"**[AUTOMATED]**")
+                                        topic_content.send_keys(Keys.ENTER)
+                                        topic_content.send_keys(f"XKCD Comic #{command[3]} has been successfully added to the blacklist.")
+                                    else:
+                                        topic_content.send_keys(f"**[AUTOMATED]**\nXKCD Comic #{command[3]} has been successfully added to the blacklist.<font size={x}>")
+                            else:
+                                if chatpm:
+                                    topic_content.send_keys(f"**[AUTOMATED]**")
+                                    topic_content.send_keys(Keys.ENTER)
+                                    topic_content.send_keys(f"{command[3]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
+                                else:
+                                    topic_content.send_keys(f"**[AUTOMATED]**\n{command[3]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
+                        else:
+                            if chatpm:
+                                topic_content.send_keys(f"**[AUTOMATED]**")
+                                topic_content.send_keys(Keys.ENTER)
+                                topic_content.send_keys("You are not authorized to use this command.")
+                                topic_content.send_keys(Keys.ENTER)
+                            else:
+                                topic_content.send_keys(f"**[AUTOMATED]**\nYou are not authorized to use this command.<font size={x}>")
+                                topic_content.send_keys(Keys.ENTER)
+                    else:
+                        isblacklist=True
+                        theblacklist=", ".join(map(str, blacklist))   
+                        theblacklist=theblacklist+"."
                 elif (isnumber(command[1])):
                     if float(command[1])>0 and float(command[1])<=lastcomicid and isinteger(command[1]) and float(command[1])!=404:
                         if (int(command[1]) in blacklist):
@@ -443,6 +485,7 @@ while True:
                     data=response.json()
                     comicurl=data["img"]
                     xkcdlink = 'https://xkcd.com/' + str(rand)
+            
             else:
                 rand = random.randint(1, lastcomicid)
                 while rand in blacklist:

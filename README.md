@@ -24,6 +24,8 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 <br><br>
 `@bot xkcd blacklist`: Outputs the current list of blacklisted XKCD comics. If it's in a topic, it will additionally output the reasons a XKCD may be blacklisted.
 <br><br>
+`@bot xkcd blacklist comic [ID HERE]`: Only authorized users can execute this command. This command blacklists the comic.
+<br><br>
 `@bot xkcd [ID HERE]` or `@bot xkcd comic [ID HERE]`: This will give you the xkcd comic with the ID given along with some info on the comic.
 ### Other
 **NO COMMAND:** If no recognizable command is detected, then the bot will output one of the following at random:
@@ -35,7 +37,6 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 **XKCD BLACKLIST:** There is a XKCD blacklist in place to block NSFW XKCD content. This blacklist is still growing, meaning you may still see a NSFW XKCD.
 <br><br>
-
 **FAIL SAFE:** Thanks to [ethandacat](https://github.com/ethandacat) for this idea in the first place; This feature basically allows the code to run itself again if it runs into an error. 
 <br><br>
 **DELETING ERROR PREVENTION**
@@ -44,7 +45,6 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
 * Changelog and version control command
-* A blacklist command which blacklists the comic. Only "valid" people can blacklist.
 * A command which the bot will give you all the information of an account on the forum given the username.
 * The "run" command where you would enter a code and it would give the result. 2 languages: Python and C++. (Credit to [ethandacat](https://github.com/ethandacat) for requesting this feature. This feature is also a tribute to the end of service for catscobot.)
 * A "fortune" command that outputs a random Magic 8 Ball response. In honor, discobot.
@@ -63,6 +63,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+March 28, 2025
+Version 1.5.2: Added xkcd blacklist comic command. 
+
 March 26, 2025
 Version 1.5.1: Added error printing for potential error, modified I did not get your message statement for chats, modified ai context, fixed bug for xkcd comic command.
 
