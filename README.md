@@ -63,6 +63,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+April 7, 2025
+Version 1.5.3: Made it in the clicking the reply button for topics, if there's an error it outputs it without breaking the bot.
+
 March 28, 2025
 Version 1.5.2: Added xkcd blacklist comic command. 
 

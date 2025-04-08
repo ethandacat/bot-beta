@@ -1,4 +1,5 @@
 import time
+import traceback
 import random
 import os
 import re
@@ -228,9 +229,10 @@ while True:
                 #browser.execute_script("arguments[0].scrollIntoView();", reply)
                 reply.click()
                 break
+    
             except Exception as e:
-                print(f"Some error occured. \n {e}")
-                browser.refresh()
+                print("\nAn unexpected error occurred:")
+                print(traceback.format_exc())  
 
         topic_content = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((
@@ -327,12 +329,12 @@ while True:
                 topic_content.send_keys(f"More coming soon! ")
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(Keys.ENTER)
-                topic_content.send_keys(f"For more information, visit [the github page for bot](https://github.com/LiquidPixel101/Bot).")
+                topic_content.send_keys(f"For more information, visit [the README github page for bot](https://github.com/LiquidPixel101/Bot/blob/main/README.md).")
                 topic_content.send_keys(Keys.ENTER)
 
             else:
                 topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot).<font size={x}>"
+                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot/blob/main/README.md).<font size={x}>"
                 )  #-----------------------------------------------
         elif command[0] == "ai" and len(command) > 1:
             if chatpm:
