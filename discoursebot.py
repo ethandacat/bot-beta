@@ -26,6 +26,10 @@ chat = model.start_chat()
 
 def getpost(link):
     match = re.search(r'(\d+)$', link)
+    slash=link.count("/")
+    #print("slash",slash)
+    if (slash==5):
+        return 1
     if match:
         return int(match.group(1))
     else:
@@ -59,13 +63,16 @@ def isinteger(s):
   else:
       return True
 
-def getcommand(thestring):
+def getcommand(thestring,firstpost):
     thestring = thestring.text
     index = thestring.lower().find('@bot')
     if index != -1:
         words = thestring[index + len('@bot'):].split()
         if len(words) > 1:
-            return ' '.join(words[:-1])
+            if firstpost:
+                return ' '.join(words[:-3])
+            else:
+                return ' '.join(words[:-1])
         elif len(words) == 1:
             return ""
         else:
@@ -179,7 +186,8 @@ while True:
 
     elementfound = False
     chatpm = False
-    
+    perm=False
+    permnum=1
     while not elementfound:
         try:
             selectmention = WebDriverWait(browser, 3).until(
@@ -196,7 +204,7 @@ while True:
             print("StaleElementReferenceException encountered. Retrying...")
             browser.refresh()
             elementfound = False
-            continue;
+            continue
         except TimeoutException:
             try:
                 selectchat = WebDriverWait(browser, 2).until(
@@ -214,14 +222,42 @@ while True:
             except stalerr:
                 browser.refresh()
             except TimeoutException:
-                #print("Try again")
-                browser.refresh()
-    postnum = getpost(thelink)
+                try:
+                    selectmention = WebDriverWait(browser, 3).until(
+                        ec.element_to_be_clickable(
+                            (By.CSS_SELECTOR, "li.notification.unread.private-message a")))
+                    elementfound = True
+                    perm=True
+                    user=WebDriverWait(selectmention, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
+                    if len(user.split())==2 and user.split()[-1]=="replies":
+                        permnum=int(user.split()[0])
+                    #print(user)
+                    thelink = selectmention.get_attribute("href")
+                    selectmention.click()
+                    break
+
+                except stalerr:
+                    print("StaleElementReferenceException encountered. Retrying...")
+                    browser.refresh()
+                    elementfound = False
+                    continue
+                except TimeoutException:
+                    browser.refresh()
+                    continue
+    postnum = getpost(thelink) #POSTNUM IS THE POST NUMBER. For example, https://x-camp.discourse.group/t/eggsample/16703/7, 7 is the postnum. It's basically the literal postnumber.
+    if perm and postnum is not None:
+        postnum=postnum+permnum-1
+        dalapost=WebDriverWait(browser, 10).until(
+            ec.element_to_be_clickable(
+                (By.CSS_SELECTOR,
+                 f'article#post_{postnum}')))
+        user=dalapost.get_attribute("aria-label").split()[-1][1:]
+        
    
     if not chatpm:
         while 1:
             try:
-
+                #print(postnum)
                 reply = WebDriverWait(browser, 10).until(
                     ec.element_to_be_clickable(
                         (By.CSS_SELECTOR,
@@ -267,11 +303,16 @@ while True:
                 (By.CSS_SELECTOR, f"div[data-id='{postnum}']")))
     #print(postcontent.text)
     #print(chatmessage.text)
-    command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
+    firstpost=postnum==1
+    command = getcommand(postcontent,firstpost) if not chatpm else pmcommand(postcontent)
     
     print(command)
     x = random.randint(1, 1000000)
     if (command=="-1"):
+        if perm:
+            browser.refresh()
+            browser.get('https://x-camp.discourse.group/')
+            continue
         if chatpm:
             topic_content.send_keys(f"**[AUTOMATED]**")
             topic_content.send_keys(Keys.ENTER)
