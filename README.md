@@ -64,6 +64,9 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+April 26, 2025
+Version 1.6.0: Complete overhaul for the AI: Upgraded to 2.5 Flash Preview, and made it so that it's ACTUAL context!
+
 April 7, 2025
 Version 1.5.4: Fixed bug where it won't reply if it's the first post of a topic ("the topic post") and added back inbox/DM support
 
