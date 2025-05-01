@@ -1,0 +1,143 @@
+import time
+import random
+import os
+import re
+import json
+import requests
+import calendar
+# from replit import db
+import google.generativeai as genai
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import StaleElementReferenceException as stalerr
+from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import ElementClickInterceptedException as ecie
+from selenium.webdriver.chrome.service import Service
+
+# new imports
+import multiprocessing
+import sys
+import traceback
+import io
+import subprocess
+
+TIME_LIMIT = 10  # Python run time
+CPP_COMPILE_TIME_LIMIT = 5  # C++ compile time
+CPP_RUN_TIME_LIMIT = 5  # C++ run time
+
+def run_code_python(code):
+    try:
+        ban = ["exec", "open", "__import__", "frommultiprocessing","importmultiprocessing", "fromthreading","importthreading", "fromturtle", "importturtle", "fromsubprocess", "importsubprocess", ",multiprocessing",",threading", ",turtle",",subprocess"]
+        cstrip = "".join(code.split(" "))
+        for i in ban:
+            if i in cstrip:
+                return f"# Error:\nPotentially dangerous code.\nIn your code: `{i}`"
+        output = io.StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = output
+        exec(code)
+        code_output = output.getvalue()
+        sys.stdout = original_stdout
+        return f"# Success!\nLanguage: Python\nCode:\n```python\n{code}\n```\n\n# Output:\n```gfdg\n{code_output}\n```"
+    except BaseException as e:
+        return f"# Error:\n```gfdg\n{traceback.format_exc()}\n```"
+
+def run_code_cpp(code):
+    try:
+        ban = [
+            "#include <stdlib.h>",           # Potentially dangerous functions from stdlib (e.g., malloc, free)
+            "#include <unistd.h>",           # System-level calls that can be dangerous
+            "system(",                       # Dangerous system call execution
+            "exec(",                         # Dangerous dynamic code execution
+            "eval(",                         # Unsafe code execution
+            "fopen(",                        # Potentially unsafe file opening
+            "fork(",                         # Risky process management
+            "popen(",                        # Dangerous process opening
+            "exit(",                         # Abrupt program termination
+            "setjmp(",                       # Unsafe jump
+            "longjmp(",                      # Unsafe jump
+            "strcpy(",                       # Dangerous string copy (buffer overflow risk)
+            "gets(",                         # Dangerous gets function (buffer overflow risk)
+            "sprintf(",                      # Dangerous formatting (buffer overflow risk)
+            "malloc(",                       # Potential memory allocation issues
+            "free(",                         # Potential memory deallocation issues
+            "delete",                        # Manual memory deallocation (unsafe without proper checks)
+            "new",                           # Manual memory allocation
+            "reinterpret_cast",              # Unsafe type casting
+            "goto",                          # Hard-to-maintain flow control
+            "cin >>",                        # Print output, could be misused in dangerous ways
+            "getline(",                      # Input handling, potential for abuse
+        ]
+        for i in ban:
+            if i in code:
+                return f"# Error:\nPotentially dangerous code.\nIn your code: `{i}`"
+
+        with open("temp.cpp", "w") as f:
+            f.write(code)
+
+        # Run the compile process with a timeout
+        compile_process = subprocess.Popen(["g++", "temp.cpp", "-o", "temp.out"])
+        compile_process.wait(timeout=CPP_COMPILE_TIME_LIMIT)
+
+        # Now execute the compiled file and capture its output
+        execution_process = subprocess.Popen("./temp.out", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = execution_process.communicate(timeout=CPP_RUN_TIME_LIMIT)
+
+        if stderr: 
+            return f"# Error in C++ execution:\n{stderr.decode()}"
+
+        return f"# Success!\nLanguage: C++\nCode:\n```\n{code}\n```\n\n# Output:\n```jghj\n{stdout.decode()}\n```"
+
+    except subprocess.TimeoutExpired:
+        return "# Error: C++ compilation or execution timed out!"
+    except BaseException as e:
+        return f"# Error:\n```gfdg\n{traceback.format_exc()}\n```"
+
+
+def run_code(code, lang):
+    if lang in ["py3","py","python","python3","snake"]:
+        # Use multiprocessing to enforce a timeout for Python code
+        pool = multiprocessing.Pool(processes=1)
+        try:
+            result = pool.apply_async(run_code_python, (code,))
+            return result.get(timeout=TIME_LIMIT)  # Timeout for Python execution
+        except multiprocessing.TimeoutError:
+            return "# Error: Python code execution timed out!"
+        finally:
+            pool.close()
+            pool.join()
+
+    elif lang in ["cpp", "c++", "gcc", "g++", "xcamp-troll"]:
+        # Use multiprocessing to enforce a timeout for C++ code compilation and execution
+        pool = multiprocessing.Pool(processes=1)
+        try:
+            result = pool.apply_async(run_code_cpp, (code,))
+            return result.get(timeout=CPP_RUN_TIME_LIMIT)  # Timeout for C++ execution
+        except multiprocessing.TimeoutError:
+            return "# Error: C++ code execution timed out!"
+        finally:
+            pool.close()
+            pool.join()
+
+    else:
+        return "# Error:\nNot a valid language."
+
+# Test the code
+code = """
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << 493+3;
+}
+"""
+
+lang = "c++"
+
+if __name__ == "__main__":
+    a = run_code(code, lang)
+    print(a)

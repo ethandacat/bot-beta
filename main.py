@@ -1,8 +1,8 @@
+
 import subprocess
 import traceback
 import time
 from replit import db
-
 print("""
 
 BOT

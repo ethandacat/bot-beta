@@ -6,6 +6,10 @@ import re
 import json
 import requests
 import calendar
+import multiprocessing
+import sys
+import io
+import subprocess
 from replit import db
 import google.generativeai as genai
 from selenium import webdriver
@@ -65,16 +69,12 @@ def isinteger(s):
   else:
       return True
 
-def getcommand(thestring,firstpost):
-    thestring = thestring.text
+def getcommand(thestring):
     index = thestring.lower().find('@bot')
     if index != -1:
         words = thestring[index + len('@bot'):].split()
         if len(words) > 1:
-            if firstpost:
-                return ' '.join(words[:-3])
-            else:
-                return ' '.join(words[:-1])
+            return ' '.join(words)
         elif len(words) == 1:
             return ""
         else:
@@ -84,7 +84,6 @@ def getcommand(thestring,firstpost):
 
 
 def pmcommand(thestring):
-    thestring = thestring.text
     index = thestring.lower().find('@bot')
     if index != -1:
         words = thestring[index + len('@bot'):].split()
@@ -98,6 +97,54 @@ def pmcommand(thestring):
 def getuser(thestring):
     thestring=thestring.text
     return thestring.split('\n')[1]
+def run_python_code(code, output):
+    try:
+        old_stdout, old_stderr = sys.stdout, sys.stderr
+        sys.stdout = sys.stderr = io.StringIO()
+
+        exec_globals = {"__builtins__": {"print": print, "range": range, "len": len}}
+        exec(code, exec_globals)
+
+        output.append(sys.stdout.getvalue())
+    except Exception as e:
+        output.append(traceback.format_exc())
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
+def run_cpp_code(code, output):
+    try:
+        with open("temp.cpp", "w") as f:
+            f.write(code)
+        compile_proc = subprocess.run(["g++", "temp.cpp", "-o", "temp.out", "-O2"], capture_output=True, text=True)
+        if compile_proc.returncode != 0:
+            output.append(compile_proc.stderr)
+            return
+        run_proc = subprocess.run(["./temp.out"], capture_output=True, text=True, timeout=10)
+        output.append(run_proc.stdout)
+    except subprocess.TimeoutExpired:
+        output.append("Execution time exceeded 10 seconds")
+    except Exception as e:
+        output.append(str(e))
+
+def run_func(code, language, time_limit=10):
+    with multiprocessing.Manager() as manager:
+        output = manager.list()
+        if language in ["py", "py3", "python3", "python"]:
+            process = multiprocessing.Process(target=run_python_code, args=(code, output))
+        elif language == "cpp" or language == "c++":
+            process = multiprocessing.Process(target=run_cpp_code, args=(code, output))
+        else:
+            return "Unsupported language"
+
+        process.start()
+        process.join(timeout=time_limit)
+
+        if process.is_alive():
+            process.terminate()
+            return "Execution time exceeded 10 seconds"
+        return output[0] if output else "No output"
+
+
 def defaultresponse(response, chatpm):
     if response == 1:
         if chatpm:
@@ -156,106 +203,69 @@ WebDriverWait(browser,
 signin = WebDriverWait(browser, 10).until(
     ec.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
 signin.click()
-
+WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR, ".current-user")))
+reqs = requests.Session()
+for cookie in browser.get_cookies():
+        reqs.cookies.set(cookie['name'], cookie['value'])
 # Main loop
 while True:
-    profilebutton = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable((By.ID, 'toggle-current-user')))
-    profilebutton.click()
-    entersummary = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable((By.ID, 'user-menu-button-profile')))
-    entersummary.click()
-    entersummary2 = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable((By.CLASS_NAME, 'summary')))
-    entersummary2.click()
-    notificationpage = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable((By.CLASS_NAME, 'user-nav__notifications')))
-    notificationpage.click()
-    try:
-        selectfilter = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'summary[data-name="All"]')))
-    except TimeoutException:
-        browser.refresh()
-        selectfilter = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'summary[data-name="All"]')))
-    selectfilter.click()
-    selectunread = WebDriverWait(browser, 10).until(
-        ec.element_to_be_clickable(
-            (By.CSS_SELECTOR, 'li[data-name="Unread"]')))
-    selectunread.click()
-
-    elementfound = False
+    
     chatpm = False
     perm=False
-    permnum=1
+    postid=0
+    elementfound=False
     while not elementfound:
-        try:
-            selectmention = WebDriverWait(browser, 3).until(
-                ec.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "li.notification.unread.mentioned a")))
-            elementfound = True
-            user=WebDriverWait(selectmention, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
-            #print(user)
-            thelink = selectmention.get_attribute("href")
-            selectmention.click()
-            break
-
-        except stalerr:
-            print("StaleElementReferenceException encountered. Retrying...")
-            browser.refresh()
-            elementfound = False
-            continue
-        except TimeoutException:
-            try:
-                selectchat = WebDriverWait(browser, 2).until(
-                    ec.element_to_be_clickable(
-                        (By.CSS_SELECTOR,
-                         "li.notification.unread.chat-mention a")))
-                user=WebDriverWait(selectchat, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
-                #print(user)
-                elementfound = True
-                chatpm = True
-                thelink = selectchat.get_attribute("href")
-                #print("thelink=", str(thelink))
-                selectchat.click()
+        notifdata=reqs.get("https://x-camp.discourse.group/notifications.json")
+        if notifdata.status_code != 200:
+            print("Bad status code:", notifdata.status_code)
+            time.sleep(1)
+        notifdata=notifdata.json()
+        for notif in notifdata['notifications']:
+            notifid=notif['id']
+            if notif['read']:
+                reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
+                time.sleep(0.5)
                 break
-            except stalerr:
-                browser.refresh()
-            except TimeoutException:
-                try:
-                    selectmention = WebDriverWait(browser, 3).until(
-                        ec.element_to_be_clickable(
-                            (By.CSS_SELECTOR, "li.notification.unread.private-message a")))
-                    elementfound = True
+            if notif['read'] == False and notif['notification_type'] in [1, 6, 29]:
+                notif_type = notif['notification_type']
+                if notif_type == 1:
+                    user=notif["data"]["display_username"]
+                    thelink=f"https://x-camp.discourse.group/t/{notif['topic_id']}/{notif['post_number']}"
+                    postid=notif['data']['original_post_id']
+                    postdatae=reqs.get(f"https://x-camp.discourse.group/posts/{postid}.json").json()
+                    postnum=postdatae["post_number"]
+                
+                elif notif_type == 29:
+                    user=notif["data"]["mentioned_by_username"]
+                    thelink=f"https://x-camp.discourse.group/chat/channel/{notif['data']['chat_channel_id']}/{notif['data']['chat_message_id']}"
+                    channelid=notif['data']['chat_message_id']
+                    postnum=notif['data']['chat_message_id']
+                    chatpm=True
+                    reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
+                elif notif_type==6:
+                    user=notif["data"]["display_username"]
+                    thelink=f"https://x-camp.discourse.group/t/{notif['topic_id']}/{notif['post_number']}"
+                    postid=notif['data']['original_post_id']
+                    postdatae=reqs.get(f"https://x-camp.discourse.group/posts/{postid}.json").json()
+                    postnum=postdatae["post_number"]
                     perm=True
-                    user=WebDriverWait(selectmention, 2).until(ec.element_to_be_clickable((By.CSS_SELECTOR,"span.item-label"))).text
-                    if len(user.split())==2 and user.split()[-1]=="replies":
-                        permnum=int(user.split()[0])
-                    #print(user)
-                    thelink = selectmention.get_attribute("href")
-                    selectmention.click()
-                    break
+                elementfound=True
+                reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
+                break 
+    browser.get(thelink)
+    
 
-                except stalerr:
-                    print("StaleElementReferenceException encountered. Retrying...")
-                    browser.refresh()
-                    elementfound = False
-                    continue
-                except TimeoutException:
-                    browser.refresh()
-                    continue
-    postnum = getpost(thelink) #POSTNUM IS THE POST NUMBER. For example, https://x-camp.discourse.group/t/eggsample/16703/7, 7 is the postnum. It's basically the literal postnumber.
-    if perm and postnum is not None:
-        postnum=postnum+permnum-1
-        dalapost=WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable(
-                (By.CSS_SELECTOR,
-                 f'article#post_{postnum}')))
-        user=dalapost.get_attribute("aria-label").split()[-1][1:]
+    #postnum = getpost(thelink) #POSTNUM IS THE POST NUMBER. For example, https://x-camp.discourse.group/t/eggsample/16703/7, 7 is the postnum. It's literally the postnumber.
+    # if perm and postnum is not None:
+    #     postnum=postnum+permnum-1
+    #     dalapost=WebDriverWait(browser, 10).until(
+    #         ec.element_to_be_clickable(
+    #             (By.CSS_SELECTOR,
+    #              f'article#post_{postnum}')))
+    #     user=dalapost.get_attribute("aria-label").split()[-1][1:]
         
-   
+    print(postnum)
+    #print(channelid)
     if not chatpm:
         while 1:
             try:
@@ -278,8 +288,6 @@ while True:
                 "textarea[aria-label='Type here. Use Markdown, BBCode, or HTML to format. Drag or paste images.']"
             )))
     else:
-        postcontent = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
         try:
             ActionChains(browser).move_to_element(postcontent).perform()
             ActionChains(browser).move_to_element(postcontent).perform()
@@ -293,20 +301,23 @@ while True:
                 "textarea[class='ember-text-area ember-view chat-composer__input']")))
     print(thelink)
     
-    backtrack=postnum
     if not chatpm:
-        postcontent = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.ID, f"post_{postnum}")))
+        #postcontent = WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, f"post_{postnum}")))
+        postdata=reqs.get(f"https://x-camp.discourse.group/posts/{postid}.json").json()
+        postcontent=postdata["raw"]
     else:
-        postcontent = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, f"div[data-id='{postnum}'] div.chat-message-text")))
-        chatmessage = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located(
-                (By.CSS_SELECTOR, f"div[data-id='{postnum}']")))
-    #print(postcontent.text)
+        postcontent=0
+        messagedata=reqs.get(f"https://x-camp.discourse.group/chat/api/channels/{channelid}/messages.json").json()
+        for msg in messagedata["messages"]:
+            if msg["id"]==postnum:
+                postcontent=msg["message"]
+        if postcontent==0:
+            browser.refresh()
+            break
+        chatmessage=postcontent
+    #print(postcontent)
     #print(chatmessage.text)
-    firstpost=postnum==1
-    command = getcommand(postcontent,firstpost) if not chatpm else pmcommand(postcontent)
+    command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
     
     print(command)
     x = random.randint(1, 1000000)
@@ -398,6 +409,8 @@ while True:
                 for part in finaloutput.split("␤"):
                     topic_content.send_keys(part)
                     topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
+      
+            
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
@@ -634,4 +647,3 @@ while True:
     time.sleep(0.002)
     browser.refresh()
     browser.get('https://x-camp.discourse.group/')
-
