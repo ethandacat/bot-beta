@@ -36,3 +36,44 @@ chat_invitation: 31,
 chat_group_mention: 32, # March 2022 - This is obsolete, as all chat_mentions use `chat_mention` type
 chat_quoted: 33,
 assigned: 34,
+
+
+csrfres = reqs.get(f'https://x-camp.discourse.group/session/csrf.json')
+if csrfres.status_code != 200:
+    print('Failed to fetch CSRF token:', csrfres.status_code)
+    print(csrfres.text)
+    exit()
+csrftoken=csrfres.json().get('csrf')
+if not csrftoken:
+    print('CSRF token missing in response.')
+    exit()
+reqs.headers.update({
+    'X-CSRF-Token': csrftoken,
+    'Content-Type': 'application/json',
+    'Referer': f'https://x-camp.discourse.group/t/{topicid}'
+})
+payload = {
+    'raw': f"**[AUTOMATED]**\nThis post is made purely with API, and integrated into the bot selenium.<post{random.randint(1,1000)}>",
+    'topic_id': topicid
+}
+response=reqs.post(posturl, json=payload)
+if response.status_code == 200:
+    print('Post successful:', response.json()['id'])
+else:
+    print(f'Failed to post. Status code: {response.status_code}')
+    print('Response:', response.text)
+
+
+
+
+userdata=reqs.get(f"https://x-camp.discourse.group/u/{user}.json").json()
+timezone=userdata["user"]["timezone"]
+try:
+    tz = pytz.timezone(timezone)
+except pytz.UnknownTimeZoneError:
+    tz = pytz.timezone("US/Pacific")
+    now = datetime.now(tz)
+    print(now.strftime('%Y-%m-%d %H:%M'))
+
+now = datetime.now(tz)
+print(now.strftime('%Y-%m-%d %H:%M'))

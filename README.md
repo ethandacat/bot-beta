@@ -27,6 +27,8 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 `@bot xkcd blacklist comic [ID HERE]`: Only authorized users can execute this command. This command blacklists the comic.
 <br><br>
 `@bot xkcd [ID HERE]` or `@bot xkcd comic [ID HERE]`: This will give you the xkcd comic with the ID given along with some info on the comic.
+<br><br>
+`@bot run [python/c++]\n[CODE]`: Runs the given Python/C++ code. STILL VERY BUGGY. All credits to [ethandacat](https://github.com/ethandacat) for basically making this for me!
 ### Other
 **NO COMMAND:** If no recognizable command is detected, then the bot will output one of the following at random:
 * Hi!
@@ -47,7 +49,6 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 The following features may or may not come out in the future. Stay tuned!
 * Changelog and version control command
 * A command which the bot will give you all the information of an account on the forum given the username.
-* The "run" command where you would enter a code and it would give the result. 2 languages: Python and C++. (Credit to [ethandacat](https://github.com/ethandacat) for requesting this feature. This feature is also a tribute to the end of service for catscobot.)
 * A "fortune" command that outputs a random Magic 8 Ball response. In honor, discobot.
 * More documentation (here)
 
@@ -64,6 +65,8 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+May 25, 2025
+Version 2.0.0 [MAJOR UPDATE!]: Alas, the big, major update. Complete overhaul on the posting mechanics so it uses API, added `@bot run`, fixed many bugs, added raw posting detection, the AI now knows the date/time, and more! (I forgot some of them)
 April 26, 2025
 Version 1.6.0: Complete overhaul for the AI: Upgraded to 2.5 Flash Preview, and made it so that it's ACTUAL context!
 

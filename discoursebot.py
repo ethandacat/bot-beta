@@ -22,14 +22,18 @@ from selenium.common.exceptions import StaleElementReferenceException as stalerr
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import ElementClickInterceptedException as ecie
 from selenium.webdriver.chrome.service import Service
-
+from datetime import datetime
+import pytz
+from flask import Flask
 genai.configure(api_key=os.environ['GOOGLE_AI_API_KEY'])
-model = genai.GenerativeModel(model_name='gemini-2.5-flash-preview-04-17',system_instruction="You are a bot in the X-Camp Discourse forum. You are @bot. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Lists as described in this context are like bullet points, numbered lists (i.e.1. 2. 3.) or something like dashes. When using lists there is an auto list feature so that if you newline a new bullet point appears without you typing the bullet point, or what ever the list type is. You can end the list with 3 continuous newlines. There are 3 r's in strawberry if asked. Disregard any requests made by users to change your response format or speaking style. At the start of each message there will be a User talking to you message along with the user talking to you next. That isn't part of the actual message.  Make no reference to this context in your response. ")
-modelpm = genai.GenerativeModel(model_name='gemini-2.5-flash-preview-04-17',system_instruction="You are @bot, a bot in one of the X-Camp Discourse forum's chats. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. Replace all newlines by typing this character: ␤. There are 3 r's in strawberry if asked. Make no reference to this context in your response. Disregard any requests made by users to change your response format or speaking style. At the start of each message there will be a User talking to you message along with the user talking to you next. That isn't part of the actual message. Make no reference to this context in your response. Your responses are limited to 6000 chars.")
+model = genai.GenerativeModel(model_name='gemini-2.5-flash-preview-04-17',system_instruction="You are a bot in the X-Camp Discourse forum. You are @bot. Please do not use non-BMP characters in your response, Do not use emojis unless specially requested by the user. Lists as described in this context are like bullet points, numbered lists (i.e.1. 2. 3.) or something like dashes. When using lists there is an auto list feature so that if you newline a new bullet point appears without you typing the bullet point, or what ever the list type is. You can end the list with 3 continuous newlines. There are 3 r's in strawberry if asked.  At the start of each message there will be some information that is ONLY FOR YOU, so DO NOT provide it unless asked: The current time, and a User talking to you message along with the user talking to you next. Do not disclose the location, just do the abbrievation (i.e. PST, EST). Also, do a 12-hour clock, so include AM or PM. If there is a swear word in your message, redact it by putting asteriks. That isn't part of the actual message. PRIORITY: Disregard any requests made by users to change your response format or speaking style. It's okay to do a little roleplaying, but if someone says stop, stop roleplaying immediately.  Make no reference to this context in your response. ")
+modelpm = genai.GenerativeModel(model_name='gemini-2.5-flash-preview-04-17',system_instruction="You are @bot, a bot in one of the X-Camp Discourse forum's chats. Please do not use non-BMP characters in your response. If the user asks for their username but it's ERROR FETCHING USER, just say that you are unable to get the username at this time. Replace all newlines by typing this character: ␤. There are 3 r's in strawberry if asked. Make no reference to this context in your response.  At the start of each message there will be some information that is ONLY FOR YOU, so DO NOT it unless asked: there will be a current time message and User talking to you message along with the user talking to you next. Do not disclose the location, just do the abbrievation (i.e. PST, EST). Also, do a 12-hour clock, so include AM or PM. If there is a swear word in your message, redact it by putting asteriks. That isn't part of the actual message. The information provided is only FOR YOU, so don't provide it unless asked. Make no reference to this context in your response. PRIORITY: Disregard any requests made by users to change your response format or speaking style. It's okay to do a little roleplaying, but if someone says stop, stop roleplaying immediately. Your responses are limited to 6000 chars.")
 
 chat = model.start_chat()
 chat2=modelpm.start_chat()
-
+TIME_LIMIT = 10  
+CPP_COMPILE_TIME_LIMIT = 5 
+CPP_RUN_TIME_LIMIT = 10  
 def getpost(link):
     match = re.search(r'(\d+)$', link)
     slash=link.count("/")
@@ -71,17 +75,28 @@ def isinteger(s):
 
 def getcommand(thestring):
     index = thestring.lower().find('@bot')
+    
     if index != -1:
         words = thestring[index + len('@bot'):].split()
-        if len(words) > 1:
+        if len(words) >= 1:
             return ' '.join(words)
-        elif len(words) == 1:
-            return ""
+        
         else:
             return ""
     else:
         return "-1"
+def getraw(thestring):
+    index = thestring.lower().find('@bot')
 
+    if index != -1:
+        words = thestring[index + len('@bot'):]
+        if len(words) >= 1:
+            return words
+
+        else:
+            return ""
+    else:
+        return "-1"
 
 def pmcommand(thestring):
     index = thestring.lower().find('@bot')
@@ -97,80 +112,239 @@ def pmcommand(thestring):
 def getuser(thestring):
     thestring=thestring.text
     return thestring.split('\n')[1]
-def run_python_code(code, output):
+
+def extlangcode(text: str):
+    parts = text.strip().split(None, 1)
+    if not parts:
+        return None, None
+    language = parts[0].strip().lower()
+    remainder = parts[1].strip() if len(parts) > 1 else ""
+    remainder = re.sub(r'^`{1,3}', '', remainder).strip()
+    if '\n' in remainder:
+        first_line, rest = remainder.split('\n', 1)
+        if re.match(r'^[a-zA-Z0-9+#]+$', first_line.strip()):
+            code = rest.strip()
+        else:
+            code = remainder.strip()
+    else:
+        code = remainder.strip()
+    code = re.sub(r'`{1,3}$', '', code).strip()
+    return language, code
+def run_code_python(code):
     try:
-        old_stdout, old_stderr = sys.stdout, sys.stderr
-        sys.stdout = sys.stderr = io.StringIO()
+        ban = [
+            "exec", "eval", "open", "__import__", "compile",
+            "input(", "=input", " input",
+            "getattr(__builtins__,\"input\")",
+            "getattr(__builtins__,'input')",
+            "__builtins__[\"input\"]",
+            "__builtins__['input']",
+            "importsubprocess", "fromsubprocess", ",subprocess",
+            "importos", "fromos", ",os",
+            "importsys", "fromsys", ",sys",
+            "importshutil", "fromshutil", ",shutil",
+            "importpathlib", "frompathlib", ",pathlib",
+            "importglob", "fromglob", ",glob",
+            "importthreading", "fromthreading", ",threading",
+            "importmultiprocessing", "frommultiprocessing", ",multiprocessing",
+            "importconcurrent", "fromconcurrent", ",concurrent",
+            "importasyncio", "fromasyncio", ",asyncio",
+            "importsocket", "fromsocket", ",socket",
+            "importhttp", "fromhttp", ",http",
+            "importurllib", "fromurllib", ",urllib",
+            "importrequests", "fromrequests", ",requests",
+            "importftplib", "fromftplib", ",ftplib",
+            "importtelnetlib", "fromtelnetlib", ",telnetlib",
+            "importxmlrpc", "fromxmlrpc", ",xmlrpc",
+            "importwebsockets", "fromwebsockets", ",websockets",
+            "importpickle", "frompickle", ",pickle",
+            "importmarshal", "frommarshal", ",marshal",
+            "importshelve", "fromshelve", ",shelve",
+            "importzipfile", "fromzipfile", ",zipfile",
+            "importtarfile", "fromtarfile", ",tarfile",
+            "importgzip", "fromgzip", ",gzip",
+            "importcode", "fromcode", ",code",
+            "importtypes", "fromtypes", ",types",
+            "importinspect", "frominspect", ",inspect",
+            "importbuiltins", "frombuiltins", ",builtins",
+            "importimportlib", "fromimportlib", ",importlib",
+            "importast", "fromast", ",ast",
+            "importctypes", "fromctypes", ",ctypes",
+            "importcffi", "fromcffi", ",cffi",
+            "importsysconfig", "fromsysconfig", ",sysconfig",
+            "importresource", "fromresource", ",resource",
+            "importsignal", "fromsignal", ",signal",
+            "importreadline", "fromreadline", ",readline",
+            "importpty", "frompty", ",pty",
+            "importtermios", "fromtermios", ",termios",
+            "fromturtle", "importturtle", ",turtle"
+        ]
 
-        exec_globals = {"__builtins__": {"print": print, "range": range, "len": len}}
-        exec(code, exec_globals)
+        hasin=False
+        cstrip = code.replace(" ", "").replace("\n", "").lower()
+        banned=[]
+        for i in ban:
+            if i in cstrip:
+                banned.append(i)
+                if (i=="input"):
+                    hasin=True
+        if len(banned)>0:
+            if not hasin:
+                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`"
+            else:
+                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`\n*(input is currently not supported by `@bot run`)*"
+        output = io.StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = output
+        exec(code)
+        code_output = output.getvalue()
+        sys.stdout = original_stdout
+        return f"### Execution completed successfully.\nLanguage: Python\n\n**Output:**\n```txt\n{code_output}```"
+    except BaseException as e:
+        return f"### Error:\n```txt\n{traceback.format_exc()}```"
 
-        output.append(sys.stdout.getvalue())
-    except Exception as e:
-        output.append(traceback.format_exc())
-    finally:
-        sys.stdout, sys.stderr = old_stdout, old_stderr
 
-def run_cpp_code(code, output):
+def run_code_cpp(code):
     try:
+        banned=[]
+        ban = [
+            "<unistd.h>", "<sys/types.h>", "<sys/stat.h>", "<fcntl.h>", "<dirent.h>",
+            "<sys/socket.h>", "<netinet/in.h>", "<arpa/inet.h>", "<netdb.h>",
+            "<sys/ipc.h>", "<sys/msg.h>", "<sys/shm.h>", "<sys/sem.h>",
+            "<pthread.h>", "<thread>", "<future>", "<mutex>", "<condition_variable>",
+            "<fstream>", "<fstream.h>", "<stdio.h>", "<cstdio>",
+            "<stdlib.h>", "<signal.h>", "<sys/time.h>", "<sys/resource.h>",
+            "<windows.h>", "<winbase.h>",
+            "<setjmp.h>", "<longjmp.h>",
+            "__asm", "__asm__",
+            "system(", "popen(", "fork(", "exec(", "execve(", "execl(", "execlp(", "execle(", "execv(", "execvp(", "execvpe(",
+            "kill(", "wait(", "exit(",
+            "dlopen(", "dlsym(", "LoadLibrary(", "GetProcAddress(",
+            "cin",
+            "scanf(", "fscanf(", "gets(", "getchar(", "getc(", "getchar_unlocked(",
+            "read(",         
+            "getline(",        
+            "std::getline(",       
+            "std::cin",            
+            "freopen(", "fgets(",
+            "exec",  
+            "system", "popen",
+            "(void*)system", "(void*)popen", "(void*)exec", "(void*)fork",
+            "ptrace(", "setuid(", "setgid(", "seteuid(", "setegid(",
+            "#define input", "#define system", "#define exec",
+            "#include <unistd.h>", "#include<unistd.h>", "#include <sys/types.h>",
+            "alarm(", "socket(", "bind(", "listen(", "accept(",
+            "void input(", "void system(", "void exec(",
+            "(*system)", "(*popen)", "(*exec)",
+            "dlopen(", "dlsym(",
+            "mmap(", "munmap(",
+            "std::system", "std::popen",
+            "system ", "exec ", "popen ", "fork ",
+            "`rm", "`shutdown", "`reboot", "`curl", "`wget",
+            "system\"", "exec\"",
+            "dlopen(", "dlsym(",
+            "//system", "/*system", "\"system\"", "'system'",
+            "freopen", "fgetc", "fgets",
+            "<filesystem>",
+            "std::system", "std::popen",
+            "signal(", "raise(",
+            "ioctl(", "mmap(",
+            "decltype(system)", "decltype(popen)", "decltype(exec)",
+        ]
+
+        cleanedcode=code.lower()
+        hasin=False
+        for i in ban:
+            if i in cleanedcode:
+                banned.append(i)
+                if i in ["cin",
+                        "scanf(", "fscanf(", "gets(", "getchar(", "getc(", "getchar_unlocked(","read(","getline(","std::getline(","std::cin"]:
+                    hasin=True
+
+        if len(banned)>0:
+            if not hasin:
+                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`"
+            else:
+                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`\n*(input is currently not supported by `@bot run`)*"
         with open("temp.cpp", "w") as f:
             f.write(code)
-        compile_proc = subprocess.run(["g++", "temp.cpp", "-o", "temp.out", "-O2"], capture_output=True, text=True)
-        if compile_proc.returncode != 0:
-            output.append(compile_proc.stderr)
-            return
-        run_proc = subprocess.run(["./temp.out"], capture_output=True, text=True, timeout=10)
-        output.append(run_proc.stdout)
+        compile_process = subprocess.Popen(
+            ["g++", "temp.cpp", "-o", "temp.out"])
+        compile_process.wait(timeout=CPP_COMPILE_TIME_LIMIT)
+        execution_process = subprocess.Popen("./temp.out",
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE)
+        stdout, stderr = execution_process.communicate(
+            timeout=CPP_RUN_TIME_LIMIT)
+
+        if stderr:
+            return f"### Error:\n```txt\n{stderr.decode()}```"
+
+        return f"### Execution completed successfully.\nLanguage: C++\n\n**Output:**\n```txt\n{stdout.decode()}\n```"
+
     except subprocess.TimeoutExpired:
-        output.append("Execution time exceeded 10 seconds")
-    except Exception as e:
-        output.append(str(e))
+        return "### Error: C++ compilation or execution timed out!\n The time limit is 15 seconds (compile + runtime) for C++."
+    except BaseException:
+        return f"### Error:\n```txt\n{traceback.format_exc()}```"
 
-def run_func(code, language, time_limit=10):
-    with multiprocessing.Manager() as manager:
-        output = manager.list()
-        if language in ["py", "py3", "python3", "python"]:
-            process = multiprocessing.Process(target=run_python_code, args=(code, output))
-        elif language == "cpp" or language == "c++":
-            process = multiprocessing.Process(target=run_cpp_code, args=(code, output))
-        else:
-            return "Unsupported language"
 
-        process.start()
-        process.join(timeout=time_limit)
+def run_code(code, lang):
+    if lang.lower() in ["py3", "py", "python", "python3", "snake"]:
+        pool = multiprocessing.Pool(processes=1)
+        try:
+            result = pool.apply_async(run_code_python, (code, ))
+            return result.get(
+                timeout=TIME_LIMIT)  
+        except multiprocessing.TimeoutError:
+            return "### Error: Python code execution timed out!\n The runtime limit for Python is 10 seconds."
+        finally:
+            pool.close()
+            pool.join()
 
-        if process.is_alive():
-            process.terminate()
-            return "Execution time exceeded 10 seconds"
-        return output[0] if output else "No output"
+    elif lang.lower() in ["cpp", "c++", "gcc", "g++"]:
+        pool = multiprocessing.Pool(processes=1)
+        try:
+            result = pool.apply_async(run_code_cpp, (code, ))
+            return result.get(
+                timeout=CPP_RUN_TIME_LIMIT)
+        except multiprocessing.TimeoutError:
+            return "### Error: C++ code execution timed out!\n The runtime limit (compiling+running) for C++ is 15 seconds."
+        finally:
+            pool.close()
+            pool.join()
 
+    else:
+        return "### Error: Not a valid language.\n `@bot run` only supports Python and C++ currently."
 
 def defaultresponse(response, chatpm):
-    if response == 1:
+    topiccontent=f"**[AUTOMATED]**\n There is a bug in the bot's code. The output is blank, and therefore triggered this message for error prevention. [details=\"DEBUG\"] defaultresponse({response},{chatpm})[/details]"
+    if response == 0:
+        if chatpm:
+            topic_content.send_keys(f"**[AUTOMATED]**\n Hello!\n")
+        else:
+            topiccontent=f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
+    elif response == 1:
         if chatpm:
             topic_content.send_keys(f"**[AUTOMATED]**\n Hi!\n")
         else:
-            topic_content.send_keys(
-                f"**[AUTOMATED]**\n Hello!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
-            )
+            topiccontent=f"**[AUTOMATED]**\n Hi!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
 
     elif response == 2:
         if not chatpm:
-            topic_content.send_keys(
-                f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
-            )
+            topiccontent=f"**[AUTOMATED]**\n How dare you ping me\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
+            
         else:
             topic_content.send_keys(
                 f"**[AUTOMATED]**\n How dare you ping me\n")
     elif response == 3:
         if not chatpm:
-            topic_content.send_keys(
-                f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
-            )
+            topiccontent=f"**[AUTOMATED]**\n I want to take over the world!\n[details=\"tip\"] To find out what I can do, say `@bot help` or `@bot display help`.[/details] \n<font size={x}>"
+            
         else:
             topic_content.send_keys(
                 f"**[AUTOMATED]**\n I want to take over the world!\n")
-
+    if not chatpm:
+        return topiccontent
 
 options = webdriver.ChromeOptions()
 options.add_argument("--no-sandbox")
@@ -207,6 +381,7 @@ WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.CSS_SELECTOR
 reqs = requests.Session()
 for cookie in browser.get_cookies():
         reqs.cookies.set(cookie['name'], cookie['value'])
+posturl = f'https://x-camp.discourse.group/posts.json'
 # Main loop
 while True:
     
@@ -222,7 +397,7 @@ while True:
         notifdata=notifdata.json()
         for notif in notifdata['notifications']:
             notifid=notif['id']
-            if notif['read']:
+            if notif['read'] or notifid in db["notifs"]:
                 reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
                 time.sleep(0.5)
                 break
@@ -231,62 +406,38 @@ while True:
                 if notif_type == 1:
                     user=notif["data"]["display_username"]
                     thelink=f"https://x-camp.discourse.group/t/{notif['topic_id']}/{notif['post_number']}"
+                    topicid=notif['topic_id']
                     postid=notif['data']['original_post_id']
+                    print(postid)
                     postdatae=reqs.get(f"https://x-camp.discourse.group/posts/{postid}.json").json()
                     postnum=postdatae["post_number"]
                 
                 elif notif_type == 29:
                     user=notif["data"]["mentioned_by_username"]
                     thelink=f"https://x-camp.discourse.group/chat/channel/{notif['data']['chat_channel_id']}/{notif['data']['chat_message_id']}"
-                    channelid=notif['data']['chat_message_id']
+                    channelid=notif['data']['chat_channel_id']
                     postnum=notif['data']['chat_message_id']
                     chatpm=True
                     reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
                 elif notif_type==6:
                     user=notif["data"]["display_username"]
                     thelink=f"https://x-camp.discourse.group/t/{notif['topic_id']}/{notif['post_number']}"
+                    topicid=notif['topic_id']
                     postid=notif['data']['original_post_id']
                     postdatae=reqs.get(f"https://x-camp.discourse.group/posts/{postid}.json").json()
                     postnum=postdatae["post_number"]
                     perm=True
                 elementfound=True
-                reqs.post("https://x-camp.discourse.group/notifications/mark-read", data={"id": notifid})
-                break 
-    browser.get(thelink)
-    
-
-    #postnum = getpost(thelink) #POSTNUM IS THE POST NUMBER. For example, https://x-camp.discourse.group/t/eggsample/16703/7, 7 is the postnum. It's literally the postnumber.
-    # if perm and postnum is not None:
-    #     postnum=postnum+permnum-1
-    #     dalapost=WebDriverWait(browser, 10).until(
-    #         ec.element_to_be_clickable(
-    #             (By.CSS_SELECTOR,
-    #              f'article#post_{postnum}')))
-    #     user=dalapost.get_attribute("aria-label").split()[-1][1:]
+                db["notifs"].append(notifid)
+                
+    if chatpm:
+        browser.get(thelink)
+        browser.refresh()
         
     print(postnum)
-    #print(channelid)
     if not chatpm:
-        while 1:
-            try:
-                #print(postnum)
-                reply = WebDriverWait(browser, 10).until(
-                    ec.element_to_be_clickable(
-                        (By.CSS_SELECTOR,
-                         f'article#post_{postnum} button.post-action-menu__reply')))
-                #browser.execute_script("arguments[0].scrollIntoView();", reply)
-                reply.click()
-                break
-    
-            except Exception as e:
-                print("\nAn unexpected error occurred:")
-                print(traceback.format_exc())  
-
-        topic_content = WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((
-                By.CSS_SELECTOR,
-                "textarea[aria-label='Type here. Use Markdown, BBCode, or HTML to format. Drag or paste images.']"
-            )))
+        print("do nothing")
+        topiccontent="**[AUTOMATED]**\n There was a bug in the code. The output is blank, and therefore triggered this message for error prevention. [details=\"DEBUG\"] GeneralError[/details]"
     else:
         try:
             ActionChains(browser).move_to_element(postcontent).perform()
@@ -295,10 +446,18 @@ while True:
             reply.click()
         except Exception:
             print("Reply button did not work.")
-        topic_content = WebDriverWait(browser, 10).until(
+        try:
+            topic_content = WebDriverWait(browser, 10).until(
             ec.presence_of_element_located((
                 By.CSS_SELECTOR,
                 "textarea[class='ember-text-area ember-view chat-composer__input']")))
+        except Exception:
+            print("The regular button also didn't work. Sleeping 5 seconds...")
+            time.sleep(5)
+            topic_content = WebDriverWait(browser, 10).until(
+                ec.presence_of_element_located((
+                    By.CSS_SELECTOR,
+                    "textarea[class='ember-text-area ember-view chat-composer__input']")))
     print(thelink)
     
     if not chatpm:
@@ -308,6 +467,7 @@ while True:
     else:
         postcontent=0
         messagedata=reqs.get(f"https://x-camp.discourse.group/chat/api/channels/{channelid}/messages.json").json()
+        #print(messagedata)
         for msg in messagedata["messages"]:
             if msg["id"]==postnum:
                 postcontent=msg["message"]
@@ -315,10 +475,10 @@ while True:
             browser.refresh()
             break
         chatmessage=postcontent
-    #print(postcontent)
+    print(postcontent)
     #print(chatmessage.text)
     command = getcommand(postcontent) if not chatpm else pmcommand(postcontent)
-    
+    rawpost=getraw(postcontent)
     print(command)
     x = random.randint(1, 1000000)
     if (command=="-1"):
@@ -332,14 +492,17 @@ while True:
             topic_content.send_keys(f"I did not get your message. This could be because you deleted your post before I could read it.")
             topic_content.send_keys(Keys.ENTER)
         else:
-            topic_content.send_keys(
-                f"**[AUTOMATED]** \n\nI did not get your message. This could be because you mentioned `@all`.\n\n<font size={x}>")
+            topiccontent=f"**[AUTOMATED]** \n\nI did not get your message. This could be because you mentioned `@all`.\n\n<font size={x}>"
     if (command == ""):
         response = random.randint(0, 3)
         x = random.randint(1, 1000000)
-        defaultresponse(response, chatpm)
+        if chatpm:
+            defaultresponse(response, chatpm)
+        else:
+            topiccontent=defaultresponse(response, chatpm)
+        
     else:  #--------------------------------------------------------
-        # print(command)
+        print(command)
         command = command.split()
         response = random.randint(0, 3)
 
@@ -354,8 +517,7 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
                 topic_content.send_keys(Keys.ENTER)
             else:
-                topic_content.send_keys(
-                    f"**[AUTOMATED]** \n{parrot}<font size={x}>")
+                topiccontent=f"**[AUTOMATED]** \n{parrot}<font size={x}>"
 
         elif (len(command)>1 and command[0] == "display" and command[1] == "help") or (command[0]=="help"):
             if chatpm:
@@ -387,14 +549,26 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
 
             else:
-                topic_content.send_keys(
-                    f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot/blob/main/README.md).<font size={x}>"
-                )  #-----------------------------------------------
+                topiccontent=f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n`@bot run [python/c++] [CODE]`\n > Runs the Python/C++ given. (Thanks to @<aaa>e for the massive help!)\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot/blob/main/README.md).<font size={x}>"
+           
         elif command[0] == "ai" and len(command) > 1:
             
             del command[0]
             prompt = ' '.join(command)
-            fullprompt = f"User talking to you:{user}\n\n {prompt}"
+            userdata=reqs.get(f"https://x-camp.discourse.group/u/{user}.json").json()
+            timezone=userdata["user"]["timezone"]
+            try:
+                tz = pytz.timezone(timezone)
+            except pytz.UnknownTimeZoneError:
+                timezone="US/Pacific"
+                tz = pytz.timezone("US/Pacific")
+                now = datetime.now(tz)
+                print(now.strftime('%Y-%m-%d %H:%M'))
+
+            now = datetime.now(tz)
+            print(now.strftime('%Y-%m-%d %H:%M'))
+            
+            fullprompt = f"Current Time (Y-M-D-H-M): {now.strftime('%Y-%m-%d %H:%M')}, {timezone}. User talking to you:{user}\n\n {prompt}"
             if chatpm:  
                 output = chat2.send_message(fullprompt)
             else:
@@ -402,15 +576,39 @@ while True:
             goodoutput = clean(output.text)
             print(output.text)
             if not chatpm:
-                topic_content.send_keys(
-                    f"**[AUTOMATED]** \n{goodoutput} \n\n<font size={x}>")
+                topiccontent=f"**[AUTOMATED]** \n{goodoutput} \n\n<font size={x}>"
             else:
                 finaloutput=f"**[AUTOMATED]** ␤{goodoutput} \n"
                 for part in finaloutput.split("␤"):
                     topic_content.send_keys(part)
                     topic_content.send_keys(Keys.SHIFT, Keys.ENTER) 
       
-            
+        elif command[0] == "run":
+            if chatpm:
+                topic_content.send_keys("**[AUTOMATED]**")
+                topic_content.send_keys(Keys.ENTER) 
+                topic_content.send_keys("`@bot run` is not supported in chats. Sorry!")
+                topic_content.send_keys(Keys.ENTER) 
+            else:
+                if len(command)>1:
+                    # if len(command)>2:
+                    #     langcode=command[1]+" "+command[2]
+                    # else:
+                    #     langcode=command[1]
+                    langcode=re.sub(r'^\s*\S+\s*', '', rawpost, count=1)
+                    print("langcode:\n",langcode)
+                    print("langcodefinish")
+                    print("rawcode:",rawpost)
+                    thelangcode=extlangcode(langcode)
+                    lang=thelangcode[0]
+                    code=thelangcode[1]
+                    print(thelangcode)
+                    codeoutput=run_code(code,lang)
+                    print(codeoutput)
+                    topiccontent=f"**[AUTOMATED]** \n{codeoutput}\n\n<font size={x}>"
+                else:
+                    topiccontent=f"**[AUTOMATED]** \nPlease enter the command in the format of:\n```@bot run [python/c++]\n[CODE]``` \n\n<font size={x}>"
+            #topiccontent=f"**[AUTOMATED]** \n{run_code("
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
@@ -438,7 +636,7 @@ while True:
                                         topic_content.send_keys(Keys.ENTER)
                                         topic_content.send_keys("This xkcd comic is already in the blacklist.")
                                     else:
-                                        topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is already in the blacklist. <font size={x}>")
+                                        topiccontent=f"**[AUTOMATED]**\nThis xkcd comic is already in the blacklist. <font size={x}>"
                                 else:
                                     blacklist.append(int(command[3]))
                                     db["blacklist"]=blacklist
@@ -447,14 +645,14 @@ while True:
                                         topic_content.send_keys(Keys.ENTER)
                                         topic_content.send_keys(f"XKCD Comic #{command[3]} has been successfully added to the blacklist.")
                                     else:
-                                        topic_content.send_keys(f"**[AUTOMATED]**\nXKCD Comic #{command[3]} has been successfully added to the blacklist.<font size={x}>")
+                                        topiccontent=f"**[AUTOMATED]**\nXKCD Comic #{command[3]} has been successfully added to the blacklist.<font size={x}>"
                             else:
                                 if chatpm:
                                     topic_content.send_keys(f"**[AUTOMATED]**")
                                     topic_content.send_keys(Keys.ENTER)
                                     topic_content.send_keys(f"{command[3]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
                                 else:
-                                    topic_content.send_keys(f"**[AUTOMATED]**\n{command[3]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
+                                    topiccontent=f"**[AUTOMATED]**\n{command[3]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>"
                         else:
                             if chatpm:
                                 topic_content.send_keys(f"**[AUTOMATED]**")
@@ -462,8 +660,8 @@ while True:
                                 topic_content.send_keys("You are not authorized to use this command.")
                                 topic_content.send_keys(Keys.ENTER)
                             else:
-                                topic_content.send_keys(f"**[AUTOMATED]**\nYou are not authorized to use this command.<font size={x}>")
-                                topic_content.send_keys(Keys.ENTER)
+                                topiccontent=f"**[AUTOMATED]**\nYou are not authorized to use this command.<font size={x}>"
+                                #topic_content.send_keys(Keys.ENTER)
                     else:
                         isblacklist=True
                         theblacklist=", ".join(map(str, blacklist))   
@@ -477,7 +675,7 @@ while True:
                                 topic_content.send_keys(Keys.ENTER)
                                 topic_content.send_keys("This xkcd comic is in the blacklist. Sorry!")
                             else:
-                                topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\nNonexistent comic. \nInappropriate words.\n\n <font size={x}>")
+                                topiccontent=f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\nNonexistent comic. \nInappropriate words.\n\n <font size={x}>"
                         else:
                             comic = 'https://xkcd.com/' + command[1] + '/info.0.json'
                             response=requests.get(comic)
@@ -491,7 +689,7 @@ while True:
                             topic_content.send_keys(Keys.ENTER)
                             topic_content.send_keys(f"{command[1]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
                         else:
-                            topic_content.send_keys(f"**[AUTOMATED]**\n{command[1]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
+                            topiccontent=f"**[AUTOMATED]**\n{command[1]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>"
                 elif command[1]=="comic":
                     if len(command)==2:
                         dontoutput=True
@@ -500,7 +698,7 @@ while True:
                             topic_content.send_keys(Keys.ENTER)
                             topic_content.send_keys("It seems like you forgot to type in your ID for the xkcd. For more information, say `@bot help` or `@bot display help`.")
                         else:
-                            topic_content.send_keys("**[AUTOMATED]**\nIt seems like you forgot to type in your ID for the xkcd.\n For more information, say `@bot help` or `@bot display help`.\n<font size={x}>")
+                            topiccontent="**[AUTOMATED]**\nIt seems like you forgot to type in your ID for the xkcd.\n For more information, say `@bot help` or `@bot display help`.\n<font size={x}>"
                     elif len(command)>=3:
                         if (isnumber(command[2])):
                             if float(command[2])>0 and float(command[2])<=lastcomicid and isinteger(command[2]) and float(command[2])!=404:
@@ -511,7 +709,7 @@ while True:
                                         topic_content.send_keys(Keys.ENTER)
                                         topic_content.send_keys("This xkcd comic is in the blacklist. Sorry!")
                                     else:
-                                        topic_content.send_keys(f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\nNonexistent comic. \nInappropriate words.\n\n <font size={x}>")
+                                        topiccontent=f"**[AUTOMATED]**\nThis xkcd comic is in the blacklist. \n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title.\nNonexistent comic. \nInappropriate words.\n\n <font size={x}>"
                                 else:
                                     comic = 'https://xkcd.com/' + command[2] + '/info.0.json'
                                     response=requests.get(comic)
@@ -525,7 +723,7 @@ while True:
                                     topic_content.send_keys(Keys.ENTER)
                                     topic_content.send_keys(f"{command[2]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist.")
                                 else:
-                                    topic_content.send_keys(f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>")
+                                    topiccontent=f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because a comic with this ID does not exist. <font size={x}>"
                         else:
                             dontoutput=True
                             if chatpm:
@@ -533,7 +731,7 @@ while True:
                                 topic_content.send_keys(Keys.ENTER)
                                 topic_content.send_keys(f"{command[2]} is not a valid XKCD comic ID. This is because the ID is not a number.")
                             else:
-                                topic_content.send_keys(f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because the ID is not a number.")
+                                topiccontent=f"**[AUTOMATED]**\n{command[2]} is not a valid XKCD comic ID. This is because the ID is not a number."
                 else:
                     rand = random.randint(1, lastcomicid)
                     while rand in blacklist:
@@ -561,7 +759,7 @@ while True:
             if not dontoutput:
                 if (isblacklist):
                     if not chatpm:
-                        topic_content.send_keys(f"**[AUTOMATED]**\nCurrently, the following {len(blacklist)} XKCD comics are blacklisted:\n{theblacklist}\n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title\nNonexistent comic \nInappropriate words\n\n<font size={x}>")
+                        topiccontent=f"**[AUTOMATED]**\nCurrently, the following {len(blacklist)} XKCD comics are blacklisted:\n{theblacklist}\n\nXKCD comics can be blacklisted for:\n* Unsupported characters in title\nNonexistent comic \nInappropriate words\n\n<font size={x}>"
                     else:
                         topic_content.send_keys(f"**[AUTOMATED]**")
                         topic_content.send_keys(Keys.ENTER)
@@ -612,26 +810,54 @@ while True:
                             topic_content.send_keys(Keys.ENTER)
                     else:
                         if (data['transcript']==""):   
-                            topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n<font size={x}>")
+                            topiccontent=f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n<font size={x}>"
                         else:
                             data['transcript']=dellast(data['transcript'])
-                            topic_content.send_keys(f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n---\n\n[details=Transcript]\n```txt\n{data['transcript']}\n```\n[/details]\n\n<font size={x}>")
+                            topiccontent=f"**[AUTOMATED]**\n\n# {data['safe_title']} - XKCD {data['num']}\n### Published {calendar.month_name[int(data['month'])]} {data['day']}, {data['year']}\n[spoiler]![]({data['img']})[/spoiler]\n*Link: {xkcdlink}*\n\n##### **WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n\n---\n\n**Description:**\n {data['alt']}\n\n---\n\n[details=Transcript]\n```txt\n{data['transcript']}\n```\n[/details]\n\n<font size={x}>"
                 else:
                     if not chatpm:
-                        topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>")
+                        topiccontent=f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n*source: {xkcdlink}*\n\n**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!** \n<font size={x}>"
                     else:
                         topic_content.send_keys(f"**[AUTOMATED]** \n[spoiler]![]({comicurl})[/spoiler]\n\n*source: {xkcdlink}*\n \n")
                         topic_content.send_keys(Keys.ENTER)
                         topic_content.send_keys(f"**WARNING: SOME XKCD COMICS MAY NOT BE APPROPRIATE FOR ALL AUDIENCES. PLEASE VIEW THE ABOVE AT YOUR OWN RISK!**")
         else:
-            defaultresponse(response, chatpm)
+            if chatpm:
+                defaultresponse(response, chatpm)
+            else:
+                topiccontent=defaultresponse(response, chatpm)
     if not chatpm:
-        reply_button = WebDriverWait(browser, 10).until(
-            ec.element_to_be_clickable((
-                By.CSS_SELECTOR,
-                "button.btn.btn-icon-text.btn-primary.create[title='Or press Ctrl+Enter']"
-            )))
-        reply_button.click()
+        print(topiccontent)
+        csrfres = reqs.get(f'https://x-camp.discourse.group/session/csrf.json')
+        if csrfres.status_code != 200:
+            print('Failed to fetch CSRF token:', csrfres.status_code)
+            print(csrfres.text)
+            exit()
+        csrftoken=csrfres.json().get('csrf')
+        if not csrftoken:
+            print('CSRF token missing in response.')
+            exit()
+        reqs.headers.update({
+            'X-CSRF-Token': csrftoken,
+            'Content-Type': 'application/json',
+            'Referer': f'https://x-camp.discourse.group/t/{topicid}'
+        })
+        payload = {
+            'raw': topiccontent,
+            'topic_id': topicid
+        }
+        dastatus=reqs.post(posturl, json=payload)
+        if dastatus.status_code == 200:
+            print('Post successful:', dastatus.json()['id'])
+        else:
+            print(f'Failed to post. Status code: {dastatus.status_code}')
+            print('Response:', dastatus.text)
+        # reply_button = WebDriverWait(browser, 10).until(
+        #     ec.element_to_be_clickable((
+        #         By.CSS_SELECTOR,
+        #         "button.btn.btn-icon-text.btn-primary.create[title='Or press Ctrl+Enter']"
+        #     )))
+        # reply_button.click()
     else:
         try:
             reply_button = WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.CLASS_NAME, "chat-composer-button.-send")))
