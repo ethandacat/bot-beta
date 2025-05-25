@@ -33,7 +33,7 @@ chat = model.start_chat()
 chat2=modelpm.start_chat()
 TIME_LIMIT = 10  
 CPP_COMPILE_TIME_LIMIT = 5 
-CPP_RUN_TIME_LIMIT = 10  
+CPP_RUN_TIME_LIMIT = 5
 def getpost(link):
     match = re.search(r'(\d+)$', link)
     slash=link.count("/")
@@ -130,7 +130,7 @@ def extlangcode(text: str):
         code = remainder.strip()
     code = re.sub(r'`{1,3}$', '', code).strip()
     return language, code
-def run_code_python(code):
+def run_code_python(code, queue):
     try:
         ban = [
             "exec", "eval", "open", "__import__", "compile",
@@ -180,33 +180,36 @@ def run_code_python(code):
             "fromturtle", "importturtle", ",turtle"
         ]
 
-        hasin=False
+        hasin = False
         cstrip = code.replace(" ", "").replace("\n", "").lower()
-        banned=[]
-        for i in ban:
-            if i in cstrip:
-                banned.append(i)
-                if (i=="input"):
-                    hasin=True
-        if len(banned)>0:
-            if not hasin:
-                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`"
-            else:
-                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`\n*(input is currently not supported by `@bot run`)*"
+        banned = [b for b in ban if b in cstrip]
+
+        if banned:
+            msg = f"### Error: Your code is potentially dangerous.\n\nBanned keywords found:\n`{banned}`"
+            if "input" or "input(" or "=input" in banned:
+                msg += "\n\n*(input is not supported by `@bot run` currently.)*"
+            queue.put(msg)
+            return
+
         output = io.StringIO()
-        original_stdout = sys.stdout
         sys.stdout = output
-        exec(code)
-        code_output = output.getvalue()
-        sys.stdout = original_stdout
-        return f"### Execution completed successfully.\nLanguage: Python\n\n**Output:**\n```txt\n{code_output}```"
-    except BaseException as e:
-        return f"### Error:\n```txt\n{traceback.format_exc()}```"
+        try:
+            exec(code, {})
+        except BaseException:
+            queue.put(f"### Error:\n```txt\n{traceback.format_exc()}```")
+            return
+        finally:
+            sys.stdout = sys.__stdout__
+
+        queue.put(f"### Execution completed successfully.\nLanguage: Python\n\n**Output:**\n```txt\n{output.getvalue()}```")
+
+    except BaseException:
+        queue.put(f"### Critical error:\n```txt\n{traceback.format_exc()}```")
 
 
-def run_code_cpp(code):
+def run_code_cpp(code, queue):
     try:
-        banned=[]
+        banned = []
         ban = [
             "<unistd.h>", "<sys/types.h>", "<sys/stat.h>", "<fcntl.h>", "<dirent.h>",
             "<sys/socket.h>", "<netinet/in.h>", "<arpa/inet.h>", "<netdb.h>",
@@ -222,13 +225,9 @@ def run_code_cpp(code):
             "dlopen(", "dlsym(", "LoadLibrary(", "GetProcAddress(",
             "cin",
             "scanf(", "fscanf(", "gets(", "getchar(", "getc(", "getchar_unlocked(",
-            "read(",         
-            "getline(",        
-            "std::getline(",       
-            "std::cin",            
+            "read(", "getline(", "std::getline(", "std::cin",
             "freopen(", "fgets(",
-            "exec",  
-            "system", "popen",
+            "exec", "system", "popen",
             "(void*)system", "(void*)popen", "(void*)exec", "(void*)fork",
             "ptrace(", "setuid(", "setgid(", "seteuid(", "setegid(",
             "#define input", "#define system", "#define exec",
@@ -236,82 +235,96 @@ def run_code_cpp(code):
             "alarm(", "socket(", "bind(", "listen(", "accept(",
             "void input(", "void system(", "void exec(",
             "(*system)", "(*popen)", "(*exec)",
-            "dlopen(", "dlsym(",
             "mmap(", "munmap(",
             "std::system", "std::popen",
-            "system ", "exec ", "popen ", "fork ",
-            "`rm", "`shutdown", "`reboot", "`curl", "`wget",
-            "system\"", "exec\"",
-            "dlopen(", "dlsym(",
-            "//system", "/*system", "\"system\"", "'system'",
-            "freopen", "fgetc", "fgets",
-            "<filesystem>",
-            "std::system", "std::popen",
             "signal(", "raise(",
-            "ioctl(", "mmap(",
-            "decltype(system)", "decltype(popen)", "decltype(exec)",
+            "ioctl(", "decltype(system)", "decltype(popen)", "decltype(exec)",
+            "<filesystem>", "`rm", "`shutdown", "`reboot", "`curl", "`wget",
+            "system\"", "exec\"", "//system", "/*system", "\"system\"", "'system'"
         ]
 
-        cleanedcode=code.lower()
-        hasin=False
+        cleanedcode = code.lower()
+        hasin = False
         for i in ban:
             if i in cleanedcode:
                 banned.append(i)
-                if i in ["cin",
-                        "scanf(", "fscanf(", "gets(", "getchar(", "getc(", "getchar_unlocked(","read(","getline(","std::getline(","std::cin"]:
-                    hasin=True
+                if i in [
+                    "cin", "scanf(", "fscanf(", "gets(", "getchar(",
+                    "getc(", "getchar_unlocked(", "read(", "getline(",
+                    "std::getline(", "std::cin"
+                ]:
+                    hasin = True
 
-        if len(banned)>0:
-            if not hasin:
-                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`"
+        if banned:
+            if hasin:
+                queue.put(f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`\n\n*(input is not supported by `@bot run` currently.)*")
             else:
-                return f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`\n*(input is currently not supported by `@bot run`)*"
+                queue.put(f"### Error: Your code is potentially dangerous.\n\n Banned keywords found:\n`{banned}`")
+            return
+
         with open("temp.cpp", "w") as f:
             f.write(code)
-        compile_process = subprocess.Popen(
-            ["g++", "temp.cpp", "-o", "temp.out"])
-        compile_process.wait(timeout=CPP_COMPILE_TIME_LIMIT)
-        execution_process = subprocess.Popen("./temp.out",
-                                             stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE)
-        stdout, stderr = execution_process.communicate(
-            timeout=CPP_RUN_TIME_LIMIT)
+
+        compile_process = subprocess.run(
+            ["g++", "temp.cpp", "-o", "temp.out"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=CPP_COMPILE_TIME_LIMIT
+        )
+
+        if compile_process.returncode != 0:
+            queue.put(f"### Error: Compilation failed.\n```txt\n{compile_process.stderr.decode()}```")
+            return
+
+        execution_process = subprocess.Popen(
+            "./temp.out",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        stdout, stderr = execution_process.communicate(timeout=CPP_RUN_TIME_LIMIT)
 
         if stderr:
-            return f"### Error:\n```txt\n{stderr.decode()}```"
+            queue.put(f"### Error:\n```txt\n{stderr.decode()}```")
+            return
 
-        return f"### Execution completed successfully.\nLanguage: C++\n\n**Output:**\n```txt\n{stdout.decode()}\n```"
+        queue.put(f"### Execution completed successfully.\nLanguage: C++\n\n**Output:**\n```txt\n{stdout.decode()}```")
 
     except subprocess.TimeoutExpired:
-        return "### Error: C++ compilation or execution timed out!\n The time limit is 15 seconds (compile + runtime) for C++."
+        queue.put("### Error: C++ compilation or execution timed out!\nThe time limit is 15 seconds (compile + runtime) for C++.")
     except BaseException:
-        return f"### Error:\n```txt\n{traceback.format_exc()}```"
+        queue.put(f"### Error:\n```txt\n{traceback.format_exc()}```")
 
 
 def run_code(code, lang):
     if lang.lower() in ["py3", "py", "python", "python3", "snake"]:
-        pool = multiprocessing.Pool(processes=1)
-        try:
-            result = pool.apply_async(run_code_python, (code, ))
-            return result.get(
-                timeout=TIME_LIMIT)  
-        except multiprocessing.TimeoutError:
-            return "### Error: Python code execution timed out!\n The runtime limit for Python is 10 seconds."
-        finally:
-            pool.close()
-            pool.join()
+            queue = multiprocessing.Queue()
+            p = multiprocessing.Process(target=run_code_python, args=(code, queue))
+            p.start()
+            p.join(timeout=TIME_LIMIT)
+
+            if p.is_alive():
+                p.terminate()
+                p.join()
+                return "### Error: Python code execution timed out!\nThe runtime limit for Python is 10 seconds."
+
+            if not queue.empty():
+                return queue.get()
+            return "### Error: No output returned from code execution."
 
     elif lang.lower() in ["cpp", "c++", "gcc", "g++"]:
-        pool = multiprocessing.Pool(processes=1)
-        try:
-            result = pool.apply_async(run_code_cpp, (code, ))
-            return result.get(
-                timeout=CPP_RUN_TIME_LIMIT)
-        except multiprocessing.TimeoutError:
-            return "### Error: C++ code execution timed out!\n The runtime limit (compiling+running) for C++ is 15 seconds."
-        finally:
-            pool.close()
-            pool.join()
+        queue = multiprocessing.Queue()
+        p = multiprocessing.Process(target=run_code_cpp, args=(code, queue))
+        p.start()
+        p.join(timeout=CPP_RUN_TIME_LIMIT)
+
+        if p.is_alive():
+            p.terminate()
+            p.join()
+            return "### Error: C++ code execution timed out!\nThe runtime limit (compiling+running) for C++ is 10 seconds."
+
+        if not queue.empty():
+            return queue.get()
+        return "### Error: No output returned from C++ execution."
 
     else:
         return "### Error: Not a valid language.\n `@bot run` only supports Python and C++ currently."
@@ -549,7 +562,7 @@ while True:
                 topic_content.send_keys(Keys.ENTER)
 
             else:
-                topiccontent=f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic. \n\nMore coming soon!\n\n`@bot run [python/c++] [CODE]`\n > Runs the Python/C++ given. (Thanks to @<aaa>e for the massive help!)\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot/blob/main/README.md).<font size={x}>"
+                topiccontent=f"**[AUTOMATED]** \n\nI currently know how to do the following things:\n\n`@bot ai [PROMPT]`\n> Outputs a Gemini 2.0-Flash-Experimental response with the prompt of everything after the `ai`.\n\n`@bot say [PARROTED TEXT]`\n > Parrots everything after the `say`.\n\n`@bot xkcd`\n> Generates a random [xkcd](https://xkcd.com) comic.\n\n`@bot xkcd last` or `@bot xkcd latest`\n > Outputs the most recent [xkcd](https://xkcd.com) comic. \n\n `@bot xkcd blacklist` \n > Outputs all of the blacklisted XKCD comic ID's and a list of reasons of why they might have been blacklisted. \n\n`@bot xkcd blacklist comic [ID HERE]` \n > Blacklists the comic with the ID. Only authorized users can execute this command. \n\n  `@bot xkcd comic [ID HERE]` or `@bot xkcd [ID HERE]`\n > Gives you the xkcd comic with the ID along with some info on the comic.\n\n`@bot run [python/c++] [CODE]`\n > Runs the Python/C++ given. (Thanks to @<aaa>e for the massive help!) \n\nMore coming soon!\n\n\nFor more information, click [here](https://github.com/LiquidPixel101/Bot/blob/main/README.md).<font size={x}>"
            
         elif command[0] == "ai" and len(command) > 1:
             

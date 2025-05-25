@@ -65,8 +65,12 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+May 25,2025
+Version 2.0.1: Minor bug fixes to `@bot run`
+
 May 25, 2025
 Version 2.0.0 [MAJOR UPDATE!]: Alas, the big, major update. Complete overhaul on the posting mechanics so it uses API, added `@bot run`, fixed many bugs, added raw posting detection, the AI now knows the date/time, and more! (I forgot some of them)
+
 April 26, 2025
 Version 1.6.0: Complete overhaul for the AI: Upgraded to 2.5 Flash Preview, and made it so that it's ACTUAL context!
 
