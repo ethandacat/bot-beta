@@ -53,7 +53,6 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
 * Changelog and version control command
-* A command which the bot will give you all the information of an account on the forum given the username.
 * More documentation (here)
 
 ## Credits:
@@ -69,6 +68,12 @@ Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](http
 
 ## Changelog:
 ```
+May 25, 2025
+Beta 2.1: Added fortune and user commands.
+
+May 25, 2025
+Dump: Updated official repo to this one
+
 May 25,2025
 Version 2.0.1: Minor bug fixes to `@bot run`
 
