@@ -32,6 +32,8 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 `@bot run [python/c++]\n[CODE]`: Runs the given Python/C++ code. STILL VERY BUGGY. All credits to [ethandacat](https://github.com/ethandacat) for basically making this for me!
 <br><br>
 `@bot fortune`: Gives a fortune.
+<br><br>
+`@bot user [USERNAME`: Get information about a user.
 ### Other
 **NO COMMAND:** If no recognizable command is detected, then the bot will output one of the following at random:
 * Hi!
