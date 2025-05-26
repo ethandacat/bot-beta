@@ -2,7 +2,7 @@
 
 # Bot (beta)
 This is not the official version of @bot! I am a major contributor to @bot -- but nonetheless this version is very buggy.
-
+<br>
 ## About
 Bot is a discourse bot that responds automatically to pings. It automates access to the discourse and was taken inspiration from discobot, a bot native to discourse. It is made in python selenium, using chromedriver. <br>
 There is a bot currently being hosted on replit for the X-Camp Discourse.
