@@ -502,10 +502,10 @@ while True:
         if chatpm:
             topic_content.send_keys(f"**[AUTOMATED]**")
             topic_content.send_keys(Keys.ENTER)
-            topic_content.send_keys(f"I did not get your message. This could be because you deleted your post before I could read it.")
+            topic_content.send_keys(f"I did not get your message. This could be because you mentioned @all.")
             topic_content.send_keys(Keys.ENTER)
         else:
-            topiccontent=f"**[AUTOMATED]** \n\nI did not get your message. This could be because you mentioned `@all`.\n\n<font size={x}>"
+            topiccontent = f"**[AUTOMATED]**\n\nI did not get your message. This could be because you deleted your post before I could read it.<font size={x}>"
     if (command == ""):
         response = random.randint(0, 3)
         x = random.randint(1, 1000000)
