@@ -707,6 +707,28 @@ while True:
 
 > **DID YOU KNOW**: {command[1]} is the {usr['id']}th user to join the Discourse!
                         """
+        elif command[0] == "version":
+            readme = reqs.get("https://raw.githubusercontent.com/LiquidPixel101/Bot/refs/heads/main/README.md")
+            if readme.status_code != 200:
+                if chatpm:
+                    topic_content.send_keys("**[AUTOMATED]**")
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys("Could not get version.")
+                else:
+                    topiccontent = "**[AUTOMATED]**\n\nCould not get version."
+            else:
+                changelog = readme.text.split("## Changelog:")[1]
+                interim = changelog.split("Version ")[1].split(":")
+                currentver = interim[0]
+                description = interim[1].split("\n")[0]
+                if chatpm:
+                    topic_content.send_keys("**[AUTOMATED]**")
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys("**Current Version**: "+currentver)
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys(description)
+                else:
+                    topiccontent = f"**[AUTOMATED]**\n\n**Current Version**:{currentver}\n{description}\n\n**Changelog**:\n{changelog}"
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
