@@ -622,6 +622,37 @@ while True:
                 else:
                     topiccontent=f"**[AUTOMATED]** \nPlease enter the command in the format of:\n```@bot run [python/c++]\n[CODE]``` \n\n<font size={x}>"
             #topiccontent=f"**[AUTOMATED]** \n{run_code("
+        elif command[0] == "fortune":
+            fortunes = [
+                "Reply hazy, try again",
+                "Better not tell you now",
+                "Outlook good",
+                "It is certain",
+                "Signs point to yes",
+                "You may rely on it",
+                "As I see it, yes",
+                "It is decidedly so",
+                "My sources say no",
+                "Very doubtful",
+                "Cannot predict now",
+                "My reply is no",
+                "Yes",
+                "Yes definitely",
+                "Ask again later",
+                "Concentrate and ask again",
+                "Most likely",
+                "Don't count on it",
+                "Without a doubt",
+                "Outlook not so good",
+                ":moai:"
+            ]
+            fortune = random.choice(fortunes)
+            if chatpm:
+                topic_content.send_keys("**[AUTOMATED]**")
+                topic_content.send_keys(Keys.ENTER)
+                topic_content.send_keys(f"> :crystal_ball: {fortune}")
+            else:
+                topiccontent = f"**[AUTOMATED]**\n\n> :crystal_ball: {fortune}"
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
