@@ -653,6 +653,60 @@ while True:
                 topic_content.send_keys(f"> :crystal_ball: {fortune}")
             else:
                 topiccontent = f"**[AUTOMATED]**\n\n> :crystal_ball: {fortune}"
+        elif command[0] == "user":
+            if len(command)<2:
+                if chatpm:
+                    topic_content.send_keys("**[AUTOMATED]**")
+                    topic_content.send_keys(Keys.ENTER)
+                    topic_content.send_keys("Please enter a valid user!")
+                else:
+                    topiccontent = "**[AUTOMATED]**\n\nPlease enter a valid user!"
+            else:
+                csrfres = reqs.get(f'https://x-camp.discourse.group/session/csrf.json')
+                if csrfres.status_code != 200:
+                    print('Failed to fetch CSRF token:', csrfres.status_code)
+                    print(csrfres.text)
+                    exit()
+                csrf = csrfres.json()["csrf"]
+                reqs.headers.update({
+                    'X-CSRF-Token': csrf,
+                    'Content-Type': 'application/json',
+                    'Referer': f'https://x-camp.discourse.group/t/17686/'
+                })
+                freq = reqs.get(f"https://x-camp.discourse.group/u/{command[1]}.json")
+                if freq.status_code != 200:
+                    if chatpm:
+                        topic_content.send_keys("**[AUTOMATED]**")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys("There was an error with your request - perhaps that user doesn't exist?")
+                    else:
+                        topiccontent = "**[AUTOMATED]**\n\nThere was an error with your request - perhaps that user doesn't exist?"
+                else:
+                    userstat = freq.json()
+                    usr = userstat['user']
+                    if chatpm:
+                        topic_content.send_keys("**[AUTOMATED]**")
+                        topic_content.send_keys(Keys.ENTER)
+                        topic_content.send_keys("`@bot user` is not supported in chat. Sorry!")
+                    else:
+                        topiccontent = f"""
+**[AUTOMATED]**
+
+## {usr["name"]}
+**Username**: {command[1]}
+**Trust Level**: {['New User','Basic','Member','Regular','Leader'][int(usr['trust_level'])]}
+**Birthday**: {usr['birthdate']}
+**Solutions**: {usr['accepted_answers']}
+**Cheers**: {usr['gamification_score']}
+**Is admin**: {usr['admin']}
+**Is mod**: {usr['mod']}
+**Title**: {usr['title']}
+**Timezone**: {usr['timezone']}
+**Featured topic**: https://x-camp.discourse.group/t/{usr['featured_topic']['slug']}
+**Badges**: {usr['badge_count']}
+
+> **DID YOU KNOW**: {command[1]} is the {usr['id']}th user to join the Discourse!
+                        """
         elif command[0] == "xkcd":
             lasturl = "https://xkcd.com/info.0.json"
             lastresponse = requests.get(lasturl)
