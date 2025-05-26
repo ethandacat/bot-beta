@@ -33,7 +33,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 <br><br>
 `@bot fortune`: Gives a fortune.
 <br><br>
-`@bot user [USERNAME`: Get information about a user.
+`@bot user [USERNAME]`: Get information about a user.
 ### Other
 **NO COMMAND:** If no recognizable command is detected, then the bot will output one of the following at random:
 * Hi!
