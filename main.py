@@ -46,10 +46,10 @@ def run_discourse_bot():
         time.sleep(0.5)
 
 if __name__ == "__main__":
-    # Start Flask server in a separate thread
+    db["version"]="2.1.0"
     flask_thread = Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
-
+    
     # Start discourse bot in the main thread
     run_discourse_bot()
