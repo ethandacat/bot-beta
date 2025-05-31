@@ -49,7 +49,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 <br><br>
 **FAIL SAFE:** Thanks to [ethandacat](https://github.com/ethandacat) for this idea in the first place; This feature basically allows the code to run itself again if it runs into an error. 
 <br><br>
-**DELETING ERROR PREVENTION** It prevents an error from happening when you ping the bot then you delete your messasge before bot can respond.
+**DELETING ERROR PREVENTION:** It prevents an error from happening when you ping the bot then you delete your messasge before bot can respond.
 <br><br>
 **REPLYING:** The bot "replies" to your post. If the bot replies to no user, then it is replying to the message directly above it. Otherwise, there will be a "reply" dialog on the top of the message that shows who the bot is replying to. It works in both chat and topics! Note: the chat reply function may not work sometimes. This would not affect or crash the bot, though.
 
