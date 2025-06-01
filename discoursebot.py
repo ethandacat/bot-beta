@@ -459,6 +459,7 @@ while True:
         if notifdata.status_code != 200:
             print("Bad status code:", notifdata.status_code)
             time.sleep(1)
+            notifdata = reqs.get("https://x-camp.discourse.group/notifications.json")
         notifdata = notifdata.json()
         for notif in notifdata['notifications']:
             notifid = notif['id']
@@ -710,8 +711,9 @@ while True:
                     id="This is account was created automatically when this discourse was made."
                     autom=True
                 displayname = userdata["user"]["name"]
+               
                 title=userdata["user"]["title"] 
-                if title == None:
+                if title is None:
                     title="None"
                 username=userdata["user"]["username"]
                 if not ('profile_hidden' in userdata["user"] and userdata["user"]["profile_hidden"]==True):
@@ -747,7 +749,7 @@ while True:
                     topic_content.send_keys(Keys.ENTER)
                     topic_content.send_keys(pfp)
                     topic_content.send_keys(Keys.ENTER)
-                    topic_content.send_keys(f"<mark> [b]{displayname}[/b]</mark>\n\n")
+                    topic_content.send_keys(f"<mark> [b] {displayname} [/b]</mark>\n\n")
                     topic_content.send_keys(Keys.ENTER)
                     time.sleep(0.1)
                     topic_content.send_keys(Keys.ENTER)

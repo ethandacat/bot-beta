@@ -46,7 +46,7 @@ def run_discourse_bot():
         time.sleep(0.5)
 
 if __name__ == "__main__":
-    db["version"]="2.1.0"
+    db["version"]="2.1.1"
     flask_thread = Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()

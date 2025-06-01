@@ -69,6 +69,9 @@ Assistance and help: ChatGPT, DeepSeek, Gemini, and [ethandacat](https://github.
 Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](https://github.com/ethandacat/catscobott)!
 ## Changelog:
 ```
+May 31, 2025
+Version 2.1.1: Fixed a small issue with `@bot user`
+
 May 30, 2025
 Version 2.1.0: Added `@bot fortune`, `@bot user`, `@bot version`, and `@bot about`. Multiple bug fixes to `@bot run`. 
 
