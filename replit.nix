@@ -5,6 +5,9 @@
     pkgs.geckodriver
     pkgs.chromium
     pkgs.chromedriver
-
+    pkgs.gcc          
+    pkgs.glibc        
+    pkgs.glibc.dev    
+    pkgs.stdenv.cc
   ];
 }

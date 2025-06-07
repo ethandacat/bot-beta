@@ -1,10 +1,8 @@
 #include <iostream>
-using namespace std;
+#include <iomanip>
+#include <string>
 int main() {
-  for (int i = 1; i < 12; i+=2) {
-    for (int j = 0; j < i; j++) {
-      cout << j << ' ';
-      }
-    cout << endl;
-  }
+    std::string msg = "Hello, world!";
+    std::cout << std::setw(20) << std::left << msg << std::endl;
+    return 0;
 }

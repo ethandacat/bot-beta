@@ -55,7 +55,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
-* Whitelisting for import
+* `@bot image` or `@bot ai image`: AI generated images.
 * `@bot roll`
 * `@bot suggest` or `@bot support`: It sends a inbox message "a support ticket" to me and the user
 * More documentation (here)
