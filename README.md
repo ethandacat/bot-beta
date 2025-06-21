@@ -18,9 +18,13 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 <br><br>
 `@bot user [USER]`: Gives all the information of the user requested. If the user is left blank, it will give all the information of you.
 <br><br>
+`@bot support` or `@bot suggest`: Creates a support ticket (a PM) to the bot manager and the user.
+<br><br>
 `@bot say [SOMETHING]`: The bot will parrot whatever text is after the word `say`.
 <br><br>
 `@bot fortune`: Gives you a random [Magic 8 Ball](https://magic-8ball.com/) answer.
+<br><br>
+`@bot roll [DICE]d[SIDES]` or `@bot roll [SIDES]`: Rolls the number of [DICE], each with [SIDES] sides.
 <br><br>
 `@bot about`: Outputs [this](https://github.com/LiquidPixel101/Bot/blob/main/README.md). (Only works in topics)
 <br><br>
@@ -55,9 +59,6 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
-* `@bot image` or `@bot ai image`: AI generated images.
-* `@bot roll`
-* `@bot suggest` or `@bot support`: It sends a inbox message "a support ticket" to me and the user
 * More documentation (here)
 
 ## Credits:
@@ -72,6 +73,11 @@ Assistance and help: ChatGPT, DeepSeek, Gemini, [ethandacat](https://github.com/
 Also go check out [ethandacat](https://github.com/ethandacat)'s [catscobot](https://github.com/ethandacat/catscobott)!
 ## Changelog:
 ```
+June 21, 2025
+Version 2.1.3: Added `@bot support`, bug fixes
+
+June 15, 2025
+Version 2.1.2: Security fixes, removed `@bot run c++` support because it's malfunctioning, fixed typos.
 May 31, 2025
 Version 2.1.1: Fixed a small issue with `@bot user`
 
