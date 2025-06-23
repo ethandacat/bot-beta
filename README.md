@@ -59,6 +59,7 @@ Bot can also only reply to topics in categories that the bot is in. It cannot re
 
 ## Anticipated Features:
 The following features may or may not come out in the future. Stay tuned!
+* Autocorrect: An AI decides if there may be a typo in your command and automatically fixes it.
 * More documentation (here)
 
 ## Credits:
@@ -78,6 +79,7 @@ Version 2.1.3: Added `@bot support`, bug fixes
 
 June 15, 2025
 Version 2.1.2: Security fixes, removed `@bot run c++` support because it's malfunctioning, fixed typos.
+
 May 31, 2025
 Version 2.1.1: Fixed a small issue with `@bot user`
 
