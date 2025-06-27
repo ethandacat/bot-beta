@@ -33,7 +33,7 @@ def run_discourse_bot():
     while True:
         try:
             # Update to correct filename: discoursebot (2).py
-            subprocess.run(["python", "discoursebot.py"], check=True)
+            subprocess.run(["python", "bot\\discoursebot.py"], check=True, cwd="bot")
         except subprocess.CalledProcessError as e:
             print("\nAn error occurred while running discoursebot (2).py:")
             print(f"Return Code: {e.returncode}")
